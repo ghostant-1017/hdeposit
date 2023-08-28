@@ -26,15 +26,18 @@ pub struct EventService {
 }
 
 impl EventService {
-    pub fn new(eth1_base: Url, eth2_base: Url, contract_addr: Address, wallet: LocalWallet, pool: PgPool, ) -> Result<Self> {
+    pub fn new(eth1_base: Url, eth2_base: Url, contract_addr: Address, wallet: LocalWallet, pool: PgPool) -> Result<Self> {
         let provider = ethers::providers::Provider::try_from(eth1_base.as_str())?;
         let client = Arc::new(SignerMiddleware::new(provider, wallet));
         let contract = Vault::new(contract_addr, client);
         Ok(Self { contract, pool, eth2_base })
     }
 
-    pub async fn start_update_service(self) -> Result<()> {
+    pub async fn start_update_service(self, start: u64) -> Result<()> {
         let mut from = self.fetch_last_synced().await?;
+        if from == 0 {
+            from = start;
+        }
         tokio::spawn(async move {
             info!("Start syncing eth1 events from: {}", from);
             loop {
