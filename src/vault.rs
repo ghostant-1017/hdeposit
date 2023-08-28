@@ -11,7 +11,7 @@ pub use vault::*;
 )]
 pub mod vault {
     const _: () = {
-        ::core::include_bytes!("/Users/cyan/Work/EthereumWorkSpace/hdeposit/abi/Vault.abi",);
+        ::core::include_bytes!("../abi/Vault.abi",);
     };
     #[allow(deprecated)]
     fn __abi() -> ::ethers::core::abi::Abi {
