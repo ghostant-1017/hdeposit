@@ -39,6 +39,7 @@ pub struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    logger::init(0);
     let cli = Cli::parse();
     info!(?cli);
     info!("Loading contract owner secret key from env...");
