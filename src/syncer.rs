@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use crate::db::PgPool;
 use crate::eth2::get_current_finality_block_number;
-use crate::model::{insert_batch_logs, query_latest_height};
+use crate::model::{insert_batch_logs, query_latest_block_number};
 use crate::vault::{PreDepositFilter, Vault};
 use anyhow::{ensure, Context, Result};
 use ethers::prelude::LogMeta;
@@ -55,7 +55,7 @@ impl EventService {
 
     async fn fetch_last_synced(&self) -> Result<Option<u64>> {
         let mut conn = self.pool.get().await?;
-        let height = query_latest_height(&mut conn).await?;
+        let height = query_latest_block_number(&mut conn).await?;
         Ok(height)
     }
 

@@ -25,7 +25,7 @@ pub async fn insert_batch_logs(conn: &mut PgConnection<'_>, logs: &Vec<(PreDepos
     Ok(())
 }
 
-pub async fn query_latest_height(conn: &mut PgConnection<'_>) -> Result<Option<u64>> {
+pub async fn query_latest_block_number(conn: &mut PgConnection<'_>) -> Result<Option<u64>> {
     let row = conn
     .query_one("select max(block_number) from pre_deposit_events;", &[])
     .await?;
