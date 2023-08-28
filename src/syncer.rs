@@ -1,15 +1,17 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::vault::{PreDepositFilter, Vault};
-use anyhow::Result;
+use anyhow::{ensure, Context, Result};
+use ethers::prelude::LogMeta;
 use ethers::prelude::SignerMiddleware;
 use ethers::{
     providers::{Http, Provider},
     signers::{LocalWallet, Wallet},
     types::Address,
 };
-use ethers::prelude::LogMeta;
 use k256::ecdsa::SigningKey;
+use tokio::time::sleep;
 pub struct EventService {
     contract: Vault<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
 }
@@ -24,15 +26,38 @@ impl EventService {
 
     pub fn start_update_service(self) -> Result<()> {
         tokio::spawn(async move {
+            let mut from = self.fetch_last_synced().await;
             loop {
-                self.do_update();
+                match self.do_update(from).await {
+                    Ok(synced) => {
+                        from = synced;
+                    }
+                    Err(_err) => todo!(),
+                };
+                sleep(Duration::from_secs(12)).await;
             }
         });
         Ok(())
     }
 
-    async fn do_update(&self) -> Result<()> {
-        Ok(())
+    async fn fetch_last_synced(&self) -> u64 {
+        todo!()
+    }
+
+    async fn fetch_last_finality(&self) -> Result<u64> {
+        todo!()
+    }
+
+    async fn insert_batch(&self, logs: Vec<(PreDepositFilter, LogMeta)>) -> Result<()> {
+        todo!()
+    }
+
+    async fn do_update(&self, from: u64) -> Result<u64> {
+        let to = self.fetch_last_finality().await?;
+        ensure!(from <= to, "Critical bug or Ethereum finality broken");
+        let logs = self.query_pre_deposit_logs(from, to).await?;
+        self.insert_batch(logs).await.context("insert batch")?;
+        Ok(to)
     }
 
     pub async fn query_pre_deposit_logs(

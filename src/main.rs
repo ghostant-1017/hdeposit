@@ -1,50 +1,45 @@
 use anyhow::{Context, Result};
 use clap::Parser;
-use ethers::{signers::LocalWallet, types::Address, utils::hex};
-use k256::elliptic_curve::generic_array::GenericArray;
-use std::{env, str::FromStr};
+use ethers::types::Address;
+use std::str::FromStr;
+mod db;
+mod logger;
+mod processor;
+mod syncer;
+mod utils;
 mod vault;
-mod eth1;
-use ethers::prelude::Abigen;
+mod wallet;
+use crate::{syncer::EventService, wallet::inital_wallet_from_env};
+use tracing::*;
 
-use crate::{vault::PreDepositFilter, eth1::EventService};
-#[derive(Parser, Clone)]
+#[derive(Parser, Clone, Debug)]
 pub struct Cli {
+    /// The execution layer api endpoitn
     #[clap(long)]
     endpoint: String,
 
+    /// Contract address
     #[clap(long)]
     contract: String,
 
+    /// Block height of contract's deloyed
     #[clap(long)]
     start: u64,
+
+    /// Database url
+    #[clap(long)]
+    dsn: String,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+    info!(?cli);
+    info!("Loading contract owner secret key from env...");
     let wallet = inital_wallet_from_env().context("init local wallet fail")?;
     let contract_addr = Address::from_str(&cli.contract).context("contract address error")?;
-    let eth1 = EventService::new(&cli.endpoint, contract_addr, wallet)?;
-    println!("Query...");
-    let logs = eth1.query_pre_deposit_logs(cli.start, 9600000).await?;
-    println!("{:?}", logs);
 
-    Ok(())
-}
-
-fn inital_wallet_from_env() -> Result<LocalWallet> {
-    let secret_key = env::var("CONTRACT_OWNER_KEY")?;
-    let key_hex = hex::decode(secret_key)?;
-    let key = k256::SecretKey::from_bytes(&GenericArray::clone_from_slice(&key_hex))?;
-    let wallet = key.into();
-    Ok(wallet)
-}
-
-fn rust_file_generation() -> Result<()> {
-    let abi_source = "./abi/Vault.abi";
-    let out_file = "./test.out";
-
-    Abigen::new("Vault", abi_source).unwrap().generate().unwrap().write_to_file(out_file).unwrap();
+    let evt_service = EventService::new(&cli.endpoint, contract_addr, wallet)?;
+    let _ = evt_service.start_update_service();
     Ok(())
 }
