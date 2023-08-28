@@ -38,7 +38,7 @@ impl EventService {
         if from == 0 {
             from = start;
         }
-        tokio::spawn(async move {
+        // tokio::spawn(async move {
             info!("Start syncing eth1 events from: {}", from);
             loop {
                 match self.do_update(from).await {
@@ -52,7 +52,7 @@ impl EventService {
                 };
                 sleep(Duration::from_secs(12)).await;
             }
-        });
+        // });
         Ok(())
     }
 

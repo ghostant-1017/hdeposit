@@ -48,6 +48,6 @@ async fn main() -> Result<()> {
     let contract_addr = Address::from_str(&cli.contract).context("parse contract address error")?;
 
     let evt_service = EventService::new(cli.eth1_endpoint,cli.eth2_endpoint, contract_addr, wallet, pool)?;
-    let _ = evt_service.start_update_service(cli.start);
+    let _ = evt_service.start_update_service(cli.start).await?;
     Ok(())
 }
