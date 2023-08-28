@@ -34,7 +34,7 @@ impl EventService {
     }
 
     pub async fn start_update_service(self, start: u64) -> Result<()> {
-        let mut from = self.fetch_last_synced().await?;
+        let mut from = self.fetch_last_synced().await.context("fetch last synced")?;
         if from == 0 {
             from = start;
         }
