@@ -20,7 +20,6 @@ create table pre_deposit_events (
 
 create table bls_addresses (
     pk SERIAL PRIMARY KEY,
-    public_key VARCHAR,
-    secrect_key VARCHAR,
+    key_store JSON,
     event_pk BIGINT NULL
 );
