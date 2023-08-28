@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::db::PgPool;
 use crate::vault::{PreDepositFilter, Vault};
 use anyhow::{ensure, Context, Result};
 use ethers::prelude::LogMeta;
@@ -16,19 +17,20 @@ use tracing::*;
 
 pub struct EventService {
     contract: Vault<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
+    pool: PgPool,
 }
 
 impl EventService {
-    pub fn new(endpoint: &str, contract_addr: Address, wallet: LocalWallet) -> Result<Self> {
+    pub fn new(endpoint: &str, contract_addr: Address, wallet: LocalWallet, pool: PgPool) -> Result<Self> {
         let provider = ethers::providers::Provider::try_from(endpoint)?;
         let client = Arc::new(SignerMiddleware::new(provider, wallet));
         let contract = Vault::new(contract_addr, client);
-        Ok(Self { contract })
+        Ok(Self { contract, pool })
     }
 
     pub fn start_update_service(self) -> Result<()> {
         tokio::spawn(async move {
-            let mut from = self.fetch_last_synced().await;
+            let mut from = self.fetch_last_synced().await.unwrap();
             info!("Syncing eth1 events from: {}", from);
             loop {
                 match self.do_update(from).await {
@@ -46,7 +48,8 @@ impl EventService {
         Ok(())
     }
 
-    async fn fetch_last_synced(&self) -> u64 {
+    async fn fetch_last_synced(&self) -> Result<u64> {
+        let conn = self.pool.get().await?;
         todo!()
     }
 

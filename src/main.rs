@@ -9,7 +9,7 @@ mod syncer;
 mod utils;
 mod vault;
 mod wallet;
-use crate::{syncer::EventService, wallet::inital_wallet_from_env};
+use crate::{syncer::EventService, wallet::inital_wallet_from_env, db::initial_pg_pool};
 use tracing::*;
 
 #[derive(Parser, Clone, Debug)]
@@ -37,9 +37,10 @@ async fn main() -> Result<()> {
     info!(?cli);
     info!("Loading contract owner secret key from env...");
     let wallet = inital_wallet_from_env().context("init local wallet fail")?;
-    let contract_addr = Address::from_str(&cli.contract).context("contract address error")?;
-
-    let evt_service = EventService::new(&cli.endpoint, contract_addr, wallet)?;
+    info!("Initializing db connection pool...");
+    let pool = initial_pg_pool(cli.dsn).await?;
+    let contract_addr = Address::from_str(&cli.contract).context("parse contract address error")?;
+    let evt_service = EventService::new(&cli.endpoint, contract_addr, wallet, pool)?;
     let _ = evt_service.start_update_service();
     Ok(())
 }
