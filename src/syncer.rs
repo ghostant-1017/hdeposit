@@ -12,6 +12,8 @@ use ethers::{
 };
 use k256::ecdsa::SigningKey;
 use tokio::time::sleep;
+use tracing::*;
+
 pub struct EventService {
     contract: Vault<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
 }
@@ -27,12 +29,16 @@ impl EventService {
     pub fn start_update_service(self) -> Result<()> {
         tokio::spawn(async move {
             let mut from = self.fetch_last_synced().await;
+            info!("Syncing eth1 events from: {}", from);
             loop {
                 match self.do_update(from).await {
                     Ok(synced) => {
+                        info!("Sync events sucess, from {from} to {synced}");
                         from = synced;
                     }
-                    Err(_err) => todo!(),
+                    Err(err) => {
+                        error!("Eth1 sync error: {:#}", err);
+                    },
                 };
                 sleep(Duration::from_secs(12)).await;
             }
