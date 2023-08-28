@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
     logger::init(0);
     let cli = Cli::parse();
     info!(?cli);
-    info!("Loading contract owner secret key from env...");
+    info!("Loading contract owner secret key from env[CONTRACT_OWNER_KEY]...");
     let wallet = inital_wallet_from_env().context("init local wallet fail")?;
     info!("Initializing db connection pool...");
     let pool = initial_pg_pool(cli.dsn).await?;

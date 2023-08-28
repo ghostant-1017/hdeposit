@@ -4,7 +4,7 @@ create table pre_deposit_events (
     address VARCHAR,
     block_number BIGINT,
     block_hash VARCHAR,
-    transacton_hash VARCHAR,
+    transaction_hash VARCHAR,
     transaction_index BIGINT,
     log_index NUMERIC,
     sender VARCHAR,

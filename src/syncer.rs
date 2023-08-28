@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::db::PgPool;
-use crate::eth2::get_current_finality;
+use crate::eth2::get_current_finality_block_number;
 use crate::model::{insert_batch_logs, query_latest_height};
 use crate::vault::{PreDepositFilter, Vault};
 use anyhow::{ensure, Context, Result};
@@ -34,16 +34,13 @@ impl EventService {
     }
 
     pub async fn start_update_service(self, start: u64) -> Result<()> {
-        let mut from = self.fetch_last_synced().await.context("fetch last synced")?;
-        if from == 0 {
-            from = start;
-        }
+        let synced = self.fetch_last_synced().await.context("fetch last synced")?;
+        let mut from = synced.unwrap_or(start).saturating_add(1);
         // tokio::spawn(async move {
             info!("Start syncing eth1 events from: {}", from);
             loop {
                 match self.do_update(from).await {
                     Ok(synced) => {
-                        info!("Sync events sucess, from {from} to {synced}");
                         from = synced;
                     }
                     Err(err) => {
@@ -56,29 +53,33 @@ impl EventService {
         Ok(())
     }
 
-    async fn fetch_last_synced(&self) -> Result<u64> {
+    async fn fetch_last_synced(&self) -> Result<Option<u64>> {
         let mut conn = self.pool.get().await?;
         let height = query_latest_height(&mut conn).await?;
         Ok(height)
     }
 
-    async fn get_current_finality(&self) -> Result<u64> {
-        get_current_finality(&self.eth2_base).await
+    async fn get_current_finality_block_number(&self) -> Result<u64> {
+        get_current_finality_block_number(&self.eth2_base).await
     }
 
-    async fn insert_batch(&self, logs: Vec<(PreDepositFilter, LogMeta)>) -> Result<()> {
+    async fn insert_batch(&self, logs: &Vec<(PreDepositFilter, LogMeta)>) -> Result<()> {
         let mut conn = self.pool.get().await?;
         insert_batch_logs(&mut conn, &logs).await?;
         Ok(())
     }
 
     async fn do_update(&self, from: u64) -> Result<u64> {
-        let to = self.get_current_finality().await.context("get current finality")?;
+        let to = self.get_current_finality_block_number().await.context("get current finality")?;
+        info!("Current finality block number: {to}");
         ensure!(from <= to, "Critical bug or Ethereum finality broken");
-        debug!("Querying logs from {from} to {to}");
+        if from == to {
+            return Ok(to);
+        }
+        info!("Querying logs from {from} to {to}");
         let logs = self.query_pre_deposit_logs(from, to).await?;
-        self.insert_batch(logs).await?;
-        debug!("Insert logs from {from} to {to} success");
+        self.insert_batch(&logs).await?;
+        info!("Insert logs from {from} to {to} success, nums: {}", logs.len());
         Ok(to)
     }
 

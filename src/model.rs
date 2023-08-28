@@ -25,16 +25,10 @@ pub async fn insert_batch_logs(conn: &mut PgConnection<'_>, logs: &Vec<(PreDepos
     Ok(())
 }
 
-pub async fn query_latest_height(conn: &mut PgConnection<'_>) -> Result<u64> {
+pub async fn query_latest_height(conn: &mut PgConnection<'_>) -> Result<Option<u64>> {
     let row = conn
-    .query_opt("select max(block_number) from pre_deposit_events;", &[])
+    .query_one("select max(block_number) from pre_deposit_events;", &[])
     .await?;
-    let height: i64 = match row {
-        Some(row) => {
-            let height = row.get(0);
-            height
-        },
-        None => 0
-    };
-    Ok(height as u64)
+    let height: Option<i64> = row.get("max");
+    Ok(height.and_then(|i| Some(i as u64)))
 }
