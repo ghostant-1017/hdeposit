@@ -1,6 +1,9 @@
 use crate::vault::PreDepositFilter;
 use anyhow::Result;
 use ethers::prelude::LogMeta;
+use lighthouse_types::DepositData;
+use lighthouse_bls::PublicKeyBytes;
+use lighthouse_bls::SecretKey;
 
 pub struct ProcessorService {}
 
