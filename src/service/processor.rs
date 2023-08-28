@@ -9,6 +9,11 @@ pub struct ProcessorService {}
 
 impl ProcessorService {
     pub fn new() -> Self {
+        // let mut conn = pool.get().await?;
+        // let ks = query_unused_key_store(&mut conn).await?;
+        // let kp = ks.decrypt_keypair("Ipfs@111".as_bytes()).map_err(|err| anyhow!("decrypt"))?;
+        // let data = DepositData {pubkey:kp.pk.into(), withdrawal_credentials: todo!(), amount: todo!(), signature: todo!() };
+        // info!("{:?}", kp);
         todo!()
     }
 

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::db::PgPool;
+use crate::storage::db::PgPool;
+use crate::storage::models::{insert_batch_logs, query_latest_block_number};
 use crate::eth2::get_current_finality_block_number;
-use crate::model::{insert_batch_logs, query_latest_block_number};
 use crate::vault::{PreDepositFilter, Vault};
 use anyhow::{ensure, Context, Result};
 use ethers::prelude::LogMeta;
