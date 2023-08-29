@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{vault::PreDepositFilter, storage::models::{StoredPreDepositEvt, query_unflattened_events, query_unused_key_store, StoredKeyStore, insert_deposit_data, update_key_store_fk}, utils::generate_deposit_data};
+use crate::{vault::PreDepositFilter, storage::models::{StoredPreDepositEvt, query_unflattened_events, query_unused_key_store, StoredKeyStore, insert_deposit_data, update_key_store_fk, update_events_to_flattened}, utils::generate_deposit_data};
 use anyhow::{Result, Context};
 use bb8_postgres::tokio_postgres::Client;
 use ethers::prelude::LogMeta;
@@ -74,7 +74,8 @@ impl ProcessorService {
                 let deposit_data_pk = self.insert_deposit_data(client, &evt, &deposit_data, &key).await.context("insert deposit data")?;
                 // 3. Update keystore foreign key
                 self.update_key_store_fk(client, &key, deposit_data_pk).await.context("update keystore fk")?;
-            }   
+            }
+            self.update_events_to_flattened(client, &evt).await?;
         }
         tx.commit().await?;
         info!("Successfully flattern events: {num_evts}, deposit data total: {total}.");
@@ -108,6 +109,11 @@ impl ProcessorService {
     
     async fn update_key_store_fk(&self, client: &Client, ks: &StoredKeyStore, fk: i64) -> Result<()> {
         update_key_store_fk(client, ks, fk).await?;
+        Ok(())
+    }
+
+    async fn update_events_to_flattened(&self, client: &Client, evt: &StoredPreDepositEvt) -> Result<()> {
+        update_events_to_flattened(client, evt.pk).await?;
         Ok(())
     }
 }
