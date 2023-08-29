@@ -8,6 +8,7 @@ use crate::vault::{PreDepositFilter, Vault};
 use anyhow::{ensure, Context, Result};
 use ethers::prelude::LogMeta;
 use ethers::prelude::SignerMiddleware;
+use ethers::types::Bytes;
 use ethers::{
     providers::{Http, Provider},
     signers::{LocalWallet, Wallet},
