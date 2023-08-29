@@ -32,7 +32,7 @@ pub async fn insert_batch_logs(
         let log_meta = serde_json::to_value(&log.1)?;
         let block_number = log.1.block_number.as_u64() as i64;
         tx.execute("insert into pre_deposit_events (pre_deposit_filter, log_meta, block_number) values 
-        ({}, {}, {});", &[&pre_deposit_filter, &log_meta, &block_number]).await?;
+        ($1, $2, $3);", &[&pre_deposit_filter, &log_meta, &block_number]).await?;
     }
     tx.commit().await?;
     Ok(())

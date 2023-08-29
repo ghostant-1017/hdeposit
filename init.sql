@@ -9,7 +9,7 @@ create table pre_deposit_events (
     log_meta JSON,
 
     -- Redundancy for convenience
-    block_number BIGINT,
+    block_number BIGINT
 );
 
 create table bls_keystore (

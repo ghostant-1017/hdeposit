@@ -23,7 +23,7 @@ impl TryFrom<Row> for StoredKeyStore {
 
 pub async fn query_unused_key_store(client: &Client, n: i64) -> Result<Vec<StoredKeyStore>> {
     let rows = client
-        .query("select * from bls_keystore where deposit_data_pk is null limit {};", &[&n])
+        .query("select * from bls_keystore where deposit_data_pk is null limit $1;", &[&n])
         .await?;
     let mut result = vec![];
     for row in rows {

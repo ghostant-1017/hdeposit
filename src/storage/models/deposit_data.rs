@@ -17,7 +17,7 @@ pub async fn insert_deposit_data(client: &Client, evt: &StoredPreDepositEvt, dep
     let row = client.query_one("insert into deposit_data 
     (pre_deposit_event_pk, signature, deposit_data_root, withdrawal_credential)
     values
-    ({}, {}, {}, {}) returning pk;", &[&pre_deposit_event_pk, &signature.to_string(), &deposit_data_root.to_string(), &withdrawal_credential.to_string()]).await?;
+    ($1, $2, $3, $4) returning pk;", &[&pre_deposit_event_pk, &signature.to_string(), &deposit_data_root.to_string(), &withdrawal_credential.to_string()]).await?;
     let id: i64 = row.try_get("pk")?;
     Ok(id)
 }
