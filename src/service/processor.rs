@@ -102,6 +102,7 @@ impl ProcessorService {
 
     async fn insert_deposit_data(&self, client: &Client, evt: &StoredPreDepositEvt, deposit_data: &DepositData, ks: &StoredKeyStore) -> Result<i64> {
         let deposit_data_id = insert_deposit_data(client, &evt, &deposit_data, &ks).await.context("insert deposit data")?;
+        info!("Insert return deposit data id: {}", deposit_data_id);
         Ok(deposit_data_id)
     }
     

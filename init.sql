@@ -21,7 +21,7 @@ create table pre_deposit_events (
 create table bls_keystore (
     pk SERIAL PRIMARY KEY,
     key_store JSON,
-    deposit_data_pk BIGINT NULL,
+    deposit_data_pk BIGINT NULL
 );
 
 CREATE table deposit_data (
@@ -32,5 +32,10 @@ CREATE table deposit_data (
     deposit_data_root VARCHAR,
     -- Withdrawl credential could be retreived from pre_deposit_event_pk
     -- Redundancy for convenience
-    withdrawal_credential VARCHAR,
-)
+    withdrawal_credential VARCHAR
+);
+
+drop table pre_deposit_events;
+drop table bls_keystore;
+
+drop table deposit_data;
