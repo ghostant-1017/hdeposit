@@ -8,6 +8,8 @@ use lighthouse_types::{ChainSpec, DepositData};
 use tokio::time::sleep;
 use tracing::*;
 use crate::storage::db::PgPool;
+
+const DEPOSIT_AMOUNT: u64 = 32_000_000_000;
 pub struct ProcessorService {
     pool: PgPool,
     password: String,
@@ -70,7 +72,7 @@ impl ProcessorService {
                 .key_store
                 .decrypt_keypair(&self.password.as_bytes())
                 .map_err(|_| anyhow::anyhow!("use password decrypt"))?;
-                let deposit_data = generate_deposit_data(&self.spec, &key_pair, &evt.log.withdrawal_credential, 32).context("generate deposit data")?;
+                let deposit_data = generate_deposit_data(&self.spec, &key_pair, &evt.log.withdrawal_credential, DEPOSIT_AMOUNT).context("generate deposit data")?;
                 let deposit_data_pk = self.insert_deposit_data(client, &evt, &deposit_data, &key).await.context("insert deposit data")?;
                 // 3. Update keystore foreign key
                 self.update_key_store_fk(client, &key, deposit_data_pk).await.context("update keystore fk")?;
