@@ -18,8 +18,8 @@ use lighthouse_bls::{Keypair, Hash256, SignatureBytes};
 use lighthouse_types::{DepositMessage, ChainSpec, SignedRoot, DepositData};
 
 pub fn generate_deposit_data(spec: &ChainSpec, kp: &Keypair, withdrawal_credential: &Bytes, amount: u64) -> Result<DepositData> {
-    let seckey = kp.sk;
-    let pubkey = kp.pk;
+    // let seckey = kp.sk.clone();
+    let pubkey = kp.pk.clone();
     let dm = DepositMessage {
         pubkey: pubkey.into(),
         withdrawal_credentials: Hash256::from_slice(&withdrawal_credential),
@@ -32,7 +32,7 @@ pub fn generate_deposit_data(spec: &ChainSpec, kp: &Keypair, withdrawal_credenti
         pubkey: dm.pubkey,
         withdrawal_credentials: dm.withdrawal_credentials,
         amount: dm.amount,
-        signature: SignatureBytes::from(seckey.sign(msg))
+        signature: SignatureBytes::from(kp.sk.sign(msg))
     };
     Ok(deposit_data)
 }
