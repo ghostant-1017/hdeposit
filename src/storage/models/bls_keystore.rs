@@ -35,7 +35,7 @@ pub async fn query_unused_key_store(client: &Client, n: i64) -> Result<Vec<Store
 }
 
 pub async fn update_key_store_fk(client: &Client, key_store: &StoredKeyStore, deposit_data_id: i64) -> Result<()> {
-    let result = client.execute("update bls_keystore set deposit_data_pk = {} where pk = {};", &[&deposit_data_id, &key_store.pk]).await?;
+    let result = client.execute("update bls_keystore set deposit_data_pk = $1 where pk = $2;", &[&deposit_data_id, &key_store.pk]).await?;
     ensure!(result == 1, "update bls_keystore fail");
     return Ok(())
 }
