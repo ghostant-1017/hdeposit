@@ -51,7 +51,7 @@ impl ProcessorService {
         let client = tx.client();
 
         // 1. Select pending events(which's not flattern yet)
-        let evts = self.select_pending_evts(client).await?;
+        let evts = self.select_pending_evts(client).await.context("select evts")?;
         let num_evts = evts.len();
         if num_evts == 0 {
             return Ok(())
@@ -63,7 +63,7 @@ impl ProcessorService {
             debug!("Event expected num: {}", evt.log.n);
             let n = evt.log.n.as_u64();
             // 2. Select `n` unused keystore 
-            let keys = self.select_unused_keystore(client, n).await?;
+            let keys = self.select_unused_keystore(client, n).await.context("select unused")?;
             // 3. Generate and insert into deposit_data table
             for key in keys {
                 let key_pair = key
@@ -71,9 +71,9 @@ impl ProcessorService {
                 .decrypt_keypair(&self.password.as_bytes())
                 .map_err(|_| anyhow::anyhow!("use password decrypt"))?;
                 let deposit_data = generate_deposit_data(&self.spec, &key_pair, &evt.log.withdrawal_credential, 32).context("generate deposit data")?;
-                let deposit_data_pk = self.insert_deposit_data(client, &evt, &deposit_data, &key).await?;
+                let deposit_data_pk = self.insert_deposit_data(client, &evt, &deposit_data, &key).await.context("insert deposit data")?;
                 // 3. Update keystore foreign key
-                self.update_key_store_fk(client, &key, deposit_data_pk).await?;
+                self.update_key_store_fk(client, &key, deposit_data_pk).await.context("update keystore fk")?;
             }   
         }
         tx.commit().await?;
