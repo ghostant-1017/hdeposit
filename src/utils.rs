@@ -2,10 +2,12 @@ use anyhow::Result;
 use ethers::prelude::Abigen;
 pub fn rust_file_generation() -> Result<()> {
     let abi_source = "./abi/Vault.abi";
-    let out_file = "./test.out";
+    let out_file = "./Vault.rs";
 
     Abigen::new("Vault", abi_source)
         .unwrap()
+        .add_derive("serde::Serialize").unwrap()
+        .add_derive("serde::Deserialize").unwrap()
         .generate()
         .unwrap()
         .write_to_file(out_file)
@@ -35,4 +37,15 @@ pub fn generate_deposit_data(spec: &ChainSpec, kp: &Keypair, withdrawal_credenti
         signature: SignatureBytes::from(kp.sk.sign(msg))
     };
     Ok(deposit_data)
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::rust_file_generation;
+
+    #[test]
+    fn test_gen_abi() {
+        rust_file_generation().unwrap()
+    }
 }

@@ -1842,6 +1842,7 @@ dependencies = [
  "ethers",
  "k256",
  "reqwest",
+ "serde",
  "serde_json",
  "tokio",
  "tracing",

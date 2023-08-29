@@ -5,17 +5,11 @@ create table pre_deposit_events (
     pk BIGSERIAL PRIMARY KEY,
     flattened BOOLEAN DEFAULT FALSE, 
 
-    address VARCHAR,
+    pre_deposit_filter JSON,
+    log_meta JSON,
+
+    -- Redundancy for convenience
     block_number BIGINT,
-    block_hash VARCHAR,
-    transaction_hash VARCHAR,
-    transaction_index BIGINT,
-    log_index NUMERIC,
-    sender VARCHAR,
-    n NUMERIC,
-    create_el_fee BOOLEAN,
-    withdrawal_credential VARCHAR,
-    el_fee_contract VARCHAR
 );
 
 create table bls_keystore (
