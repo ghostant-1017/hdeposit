@@ -1,5 +1,48 @@
 use super::*;
+use bb8_postgres::tokio_postgres::{Row, Client};
 use ethers::prelude::LogMeta;
+
+pub struct StoredPreDepositEvt {
+    pub pk: i64,
+    pub flattened: bool,
+    pub log: PreDepositFilter,
+    pub meta: LogMeta,
+}
+
+impl TryFrom<Row> for StoredPreDepositEvt {
+    type Error = anyhow::Error;
+    fn try_from(row: Row) -> std::result::Result<Self, Self::Error> {
+        let pk = row.try_get("pk")?;
+        let flattened = row.try_get("flattened")?;
+        let address = serde_json::from_str(row.try_get("address")?)?;
+        let block_number = serde_json::from_str(row.try_get("block_number")?)?;
+        let block_hash = serde_json::from_str(row.try_get("block_hash")?)?;
+        let transaction_hash = serde_json::from_str(row.try_get("transaction_hash")?)?;
+        let transaction_index = serde_json::from_str(row.try_get("transaction_index")?)?;
+        let log_index = serde_json::from_str(row.try_get("log_index")?)?;
+        let sender = serde_json::from_str(row.try_get("sender")?)?;
+        let n = serde_json::from_str(row.try_get("n")?)?;
+        let create_el_fee = row.try_get("create_el_fee")?;
+        let withdrawal_credential = serde_json::from_str(row.try_get("withdrawal_credential")?)?;
+        let el_fee_contract = serde_json::from_str(row.try_get("el_fee_contract")?)?;
+        let log = PreDepositFilter {
+            sender,
+            n,
+            create_el_fee,
+            withdrawal_credential,
+            el_fee_contract,
+        };
+        let meta = LogMeta {
+            address,
+            block_number,
+            block_hash,
+            transaction_hash,
+            transaction_index,
+            log_index,
+        };
+        Ok(StoredPreDepositEvt { pk, flattened, log, meta })
+    }
+}
 
 pub async fn insert_batch_logs(
     conn: &mut PgConnection<'_>,
@@ -35,4 +78,12 @@ pub async fn query_latest_block_number(conn: &mut PgConnection<'_>) -> Result<Op
     Ok(height.map(|i| i as u64))
 }
 
-
+pub async fn query_unflattened_events(client: &Client) -> Result<Vec<StoredPreDepositEvt>> {
+    let rows = client.query("select * from pre_deposit_events where flattened = false order by block_number;", &[]).await?;
+    let mut result = vec![];
+    for row in rows {
+        let ks = row.try_into()?;
+        result.push(ks);
+    }
+    Ok(result)
+}

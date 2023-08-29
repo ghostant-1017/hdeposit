@@ -1,9 +1,10 @@
 use crate::{
-    logger, service::EventService, storage::db::initial_pg_pool, wallet::inital_wallet_from_env,
+    logger, service::{EventService, ProcessorService}, storage::db::initial_pg_pool, wallet::inital_wallet_from_env,
 };
 use anyhow::{Context, Result};
 use clap::Parser;
 use ethers::types::Address;
+use lighthouse_types::ChainSpec;
 use std::str::FromStr;
 use tracing::*;
 use url::Url;
@@ -27,6 +28,16 @@ pub struct Cli {
     /// Database url
     #[clap(long)]
     dsn: String,
+
+    /// Password of keystore
+    #[clap(long)]
+    password: String,
+
+    /// ChainID
+    /// mainnet: 0
+    /// geriol: 1
+    #[clap(long)]
+    chain_id: i8,
 }
 
 impl Cli {
@@ -44,14 +55,24 @@ impl Cli {
             self.eth2_endpoint,
             contract_addr,
             wallet,
-            pool,
+            pool.clone(),
         )?;
-        run(self.start, evt_service).await?;
+        let spec = match self.chain_id {
+            0 => ChainSpec::mainnet(),
+            _ => ChainSpec::gnosis()
+        };
+        let proc_service = ProcessorService::new(
+            pool,
+            &self.password,
+            spec
+        );
+        run(self.start, evt_service, proc_service).await?;
         Ok(())
     }
 }
 
-async fn run(start: u64, evt_service: EventService) -> Result<()> {
+async fn run(start: u64, evt_service: EventService, proc_service: ProcessorService) -> Result<()> {
+    proc_service.start_update_service();
     evt_service.start_update_service(start).await?;
     Ok(())
 }

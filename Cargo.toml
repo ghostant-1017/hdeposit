@@ -20,3 +20,4 @@ serde_json = "1"
 lighthouse-types = { git = "https://github.com/sigp/lighthouse.git", branch = "stable", package = "types"}
 lighthouse-bls = { git = "https://github.com/sigp/lighthouse.git", branch = "stable", package = "bls"}
 eth2_keystore = { git = "https://github.com/sigp/lighthouse.git", branch = "stable", package = "eth2_keystore"}
+tree_hash = "0.5.0"

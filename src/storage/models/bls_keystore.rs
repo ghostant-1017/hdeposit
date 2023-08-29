@@ -1,12 +1,12 @@
 use super::*;
 use anyhow::ensure;
-use bb8_postgres::tokio_postgres::Row;
+use bb8_postgres::tokio_postgres::{Row, Client};
 use eth2_keystore::Keystore;
 
 pub struct StoredKeyStore {
     pub pk: i64,
     pub key_store: Keystore,
-    pub event_pk: Option<i64>
+    pub deposit_data_pk: Option<i64>
 }
 
 impl TryFrom<Row> for StoredKeyStore {
@@ -16,14 +16,14 @@ impl TryFrom<Row> for StoredKeyStore {
         let pk: i64 = row.try_get("pk")?;
         let data: serde_json::Value = row.try_get("key_store")?;
         let key_store = Keystore::from_json_str(&data.to_string()).map_err(|_| anyhow!("serde error"))?;
-        let event_pk: Option<i64> = row.try_get("event_pk")?;
-        Ok(StoredKeyStore { pk, key_store, event_pk })
+        let deposit_data_pk: Option<i64> = row.try_get("deposit_data_pk")?;
+        Ok(StoredKeyStore { pk, key_store, deposit_data_pk })
     }
 }
 
-pub async fn query_unused_key_store(conn: &mut PgConnection<'_>, n: i64) -> Result<Vec<StoredKeyStore>> {
-    let rows = conn
-        .query("select * from bls_addresses where event_pk is null limit {};", &[&n])
+pub async fn query_unused_key_store(client: &Client, n: i64) -> Result<Vec<StoredKeyStore>> {
+    let rows = client
+        .query("select * from bls_keystore where event_pk is null limit {};", &[&n])
         .await?;
     let mut result = vec![];
     for row in rows {
@@ -32,4 +32,10 @@ pub async fn query_unused_key_store(conn: &mut PgConnection<'_>, n: i64) -> Resu
     }
     ensure!(result.len() == n as usize, "Not enough bls keystore, expect: {}, found: {}.", n, result.len());
     return Ok(result)
+}
+
+pub async fn update_key_store_fk(client: &Client, key_store: &StoredKeyStore, deposit_data_id: i64) -> Result<()> {
+    let result = client.execute("update bls_keystore set deposit_data_pk = {} where pk = {};", &[&deposit_data_id, &key_store.pk]).await?;
+    ensure!(result == 1, "update bls_keystore fail");
+    return Ok(())
 }

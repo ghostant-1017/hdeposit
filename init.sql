@@ -3,7 +3,7 @@ CREATE DATABASE hellman;
 create table pre_deposit_events (
     -- TODO: add primary key
     pk SERIAL PRIMARY KEY,
-    processed_n NUMERIC DEFAULT 0, 
+    flattened BOOLEAN DEFAULT FALSE, 
 
     address VARCHAR,
     block_number BIGINT,
@@ -18,8 +18,19 @@ create table pre_deposit_events (
     el_fee_contract VARCHAR
 );
 
-create table bls_addresses (
+create table bls_keystore (
     pk SERIAL PRIMARY KEY,
     key_store JSON,
-    event_pk BIGINT NULL
+    deposit_data_pk BIGINT NULL,
 );
+
+CREATE table deposit_data (
+    pk SERIAL PRIMARY KEY,
+    pre_deposit_event_pk BIGINT,
+
+    signature VARCHAR,
+    deposit_data_root VARCHAR,
+    -- Withdrawl credential could be retreived from pre_deposit_event_pk
+    -- Redundancy for convenience
+    withdrawal_credential VARCHAR,
+)

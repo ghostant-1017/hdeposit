@@ -17,7 +17,7 @@ use ethers::types::Bytes;
 use lighthouse_bls::{Keypair, Hash256, SignatureBytes};
 use lighthouse_types::{DepositMessage, ChainSpec, SignedRoot, DepositData};
 
-pub fn generate_deposit_data(spec: ChainSpec, kp: Keypair, withdrawal_credential: Bytes, amount: u64) -> Result<DepositData> {
+pub fn generate_deposit_data(spec: &ChainSpec, kp: &Keypair, withdrawal_credential: &Bytes, amount: u64) -> Result<DepositData> {
     let seckey = kp.sk;
     let pubkey = kp.pk;
     let dm = DepositMessage {
