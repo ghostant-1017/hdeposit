@@ -1,9 +1,6 @@
 use crate::vault::PreDepositFilter;
 use anyhow::Result;
 use ethers::prelude::LogMeta;
-use lighthouse_types::DepositData;
-use lighthouse_bls::PublicKeyBytes;
-use lighthouse_bls::SecretKey;
 
 pub struct ProcessorService {}
 
@@ -36,9 +33,7 @@ impl ProcessorService {
         todo!()
     }
 
-    async fn call_contract_deposit(&self, logs: Vec<(PreDepositFilter, LogMeta)>) {
+    async fn call_contract_deposit(&self, _logs: Vec<(PreDepositFilter, LogMeta)>) {
         todo!()
     }
 }
-
-pub fn generate_calldata() {}

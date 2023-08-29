@@ -1,6 +1,6 @@
 use anyhow::Result;
 use ethers::prelude::Abigen;
-fn rust_file_generation() -> Result<()> {
+pub fn rust_file_generation() -> Result<()> {
     let abi_source = "./abi/Vault.abi";
     let out_file = "./test.out";
 

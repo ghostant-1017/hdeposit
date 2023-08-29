@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use crate::eth2::get_current_finality_block_number;
 use crate::storage::db::PgPool;
 use crate::storage::models::{insert_batch_logs, query_latest_block_number};
-use crate::eth2::get_current_finality_block_number;
 use crate::vault::{PreDepositFilter, Vault};
 use anyhow::{ensure, Context, Result};
 use ethers::prelude::LogMeta;
@@ -26,29 +26,42 @@ pub struct EventService {
 }
 
 impl EventService {
-    pub fn new(eth1_base: Url, eth2_base: Url, contract_addr: Address, wallet: LocalWallet, pool: PgPool) -> Result<Self> {
+    pub fn new(
+        eth1_base: Url,
+        eth2_base: Url,
+        contract_addr: Address,
+        wallet: LocalWallet,
+        pool: PgPool,
+    ) -> Result<Self> {
         let provider = ethers::providers::Provider::try_from(eth1_base.as_str())?;
         let client = Arc::new(SignerMiddleware::new(provider, wallet));
         let contract = Vault::new(contract_addr, client);
-        Ok(Self { contract, pool, eth2_base })
+        Ok(Self {
+            contract,
+            pool,
+            eth2_base,
+        })
     }
 
     pub async fn start_update_service(self, start: u64) -> Result<()> {
-        let synced = self.fetch_last_synced().await.context("fetch last synced")?;
+        let synced = self
+            .fetch_last_synced()
+            .await
+            .context("fetch last synced")?;
         let mut from = synced.unwrap_or(start).saturating_add(1);
         // tokio::spawn(async move {
-            info!("Start syncing eth1 events from: {}", from);
-            loop {
-                match self.do_update(from).await {
-                    Ok(synced) => {
-                        from = synced;
-                    }
-                    Err(err) => {
-                        error!("Eth1 sync error: {:#}", err);
-                    },
-                };
-                sleep(Duration::from_secs(12)).await;
-            }
+        info!("Start syncing eth1 events from: {}", from);
+        loop {
+            match self.do_update(from).await {
+                Ok(synced) => {
+                    from = synced;
+                }
+                Err(err) => {
+                    error!("Eth1 sync error: {:#}", err);
+                }
+            };
+            sleep(Duration::from_secs(12)).await;
+        }
         // });
         Ok(())
     }
@@ -65,12 +78,15 @@ impl EventService {
 
     async fn insert_batch(&self, logs: &Vec<(PreDepositFilter, LogMeta)>) -> Result<()> {
         let mut conn = self.pool.get().await?;
-        insert_batch_logs(&mut conn, &logs).await?;
+        insert_batch_logs(&mut conn, logs).await?;
         Ok(())
     }
 
     async fn do_update(&self, from: u64) -> Result<u64> {
-        let to = self.get_current_finality_block_number().await.context("get current finality")?;
+        let to = self
+            .get_current_finality_block_number()
+            .await
+            .context("get current finality")?;
         info!("Current finality block number: {to}");
         ensure!(from <= to, "Critical bug or Ethereum finality broken");
         if from == to {
@@ -79,7 +95,10 @@ impl EventService {
         info!("Querying logs from {from} to {to}");
         let logs = self.query_pre_deposit_logs(from, to).await?;
         self.insert_batch(&logs).await?;
-        info!("Insert logs from {from} to {to} success, nums: {}", logs.len());
+        info!(
+            "Insert logs from {from} to {to} success, nums: {}",
+            logs.len()
+        );
         Ok(to)
     }
 
