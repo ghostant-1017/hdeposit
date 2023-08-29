@@ -1,6 +1,6 @@
 use super::*;
 use anyhow::ensure;
-use bb8_postgres::tokio_postgres::{Row, Client};
+use bb8_postgres::tokio_postgres::{Client, Row};
 use ethers::prelude::LogMeta;
 
 pub struct StoredPreDepositEvt {
@@ -17,9 +17,14 @@ impl TryFrom<Row> for StoredPreDepositEvt {
         let flattened = row.try_get("flattened")?;
         let pre_deposit_filter: serde_json::Value = row.try_get("pre_deposit_filter")?;
         let pre_deposit_filter = serde_json::from_value(pre_deposit_filter)?;
-        let log_meta: serde_json::Value= row.try_get("log_meta")?;
+        let log_meta: serde_json::Value = row.try_get("log_meta")?;
         let log_meta = serde_json::from_value(log_meta)?;
-        Ok(StoredPreDepositEvt { pk, flattened, log: pre_deposit_filter, meta: log_meta })
+        Ok(StoredPreDepositEvt {
+            pk,
+            flattened,
+            log: pre_deposit_filter,
+            meta: log_meta,
+        })
     }
 }
 
@@ -32,8 +37,12 @@ pub async fn insert_batch_logs(
         let pre_deposit_filter = serde_json::to_value(&log.0)?;
         let log_meta = serde_json::to_value(&log.1)?;
         let block_number = log.1.block_number.as_u64() as i64;
-        tx.execute("insert into pre_deposit_events (pre_deposit_filter, log_meta, block_number) values 
-        ($1, $2, $3);", &[&pre_deposit_filter, &log_meta, &block_number]).await?;
+        tx.execute(
+            "insert into pre_deposit_events (pre_deposit_filter, log_meta, block_number) values 
+        ($1, $2, $3);",
+            &[&pre_deposit_filter, &log_meta, &block_number],
+        )
+        .await?;
     }
     tx.commit().await?;
     Ok(())
@@ -48,7 +57,12 @@ pub async fn query_latest_block_number(conn: &mut PgConnection<'_>) -> Result<Op
 }
 
 pub async fn query_unflattened_events(client: &Client) -> Result<Vec<StoredPreDepositEvt>> {
-    let rows = client.query("select * from pre_deposit_events where flattened = false order by block_number;", &[]).await?;
+    let rows = client
+        .query(
+            "select * from pre_deposit_events where flattened = false order by block_number;",
+            &[],
+        )
+        .await?;
     let mut result = vec![];
     for row in rows {
         let ks = row.try_into()?;
@@ -58,7 +72,12 @@ pub async fn query_unflattened_events(client: &Client) -> Result<Vec<StoredPreDe
 }
 
 pub async fn update_events_to_flattened(client: &Client, pk: i64) -> Result<()> {
-    let result = client.execute("update pre_deposit_events set flattened = true where pk=$1", &[&pk]).await?;
+    let result = client
+        .execute(
+            "update pre_deposit_events set flattened = true where pk=$1",
+            &[&pk],
+        )
+        .await?;
     ensure!(result == 1, "update pre_deposit_events to flattened error");
     Ok(())
 }

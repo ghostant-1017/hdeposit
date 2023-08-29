@@ -1,11 +1,16 @@
 use crate::{
-    logger, service::{EventService, ProcessorService}, storage::db::initial_pg_pool, wallet::inital_wallet_from_env,
+    logger,
+    service::{EventService, ProcessorService},
+    storage::db::initial_pg_pool,
+    vault::Vault,
+    wallet::inital_wallet_from_env,
 };
 use anyhow::{Context, Result};
 use clap::Parser;
+use ethers::prelude::SignerMiddleware;
 use ethers::types::Address;
 use lighthouse_types::ChainSpec;
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 use tracing::*;
 use url::Url;
 #[derive(Parser, Clone, Debug)]
@@ -50,22 +55,16 @@ impl Cli {
         let contract_addr =
             Address::from_str(&self.contract).context("parse contract address error")?;
         info!("Starting event service...");
-        let evt_service = EventService::new(
-            self.eth1_endpoint,
-            self.eth2_endpoint,
-            contract_addr,
-            wallet,
-            pool.clone(),
-        )?;
+        let provider = ethers::providers::Provider::try_from(self.eth1_endpoint.as_str())?;
+        let client = Arc::new(SignerMiddleware::new(provider, wallet));
+        let contract = Vault::new(contract_addr, client);
+
+        let evt_service = EventService::new(self.eth2_endpoint, contract.clone(), pool.clone())?;
         let spec = match self.chain_id {
             0 => ChainSpec::mainnet(),
-            _ => ChainSpec::gnosis()
+            _ => ChainSpec::gnosis(),
         };
-        let proc_service = ProcessorService::new(
-            pool,
-            &self.password,
-            spec
-        );
+        let proc_service = ProcessorService::new(pool, &self.password, spec, contract);
         run(self.start, evt_service, proc_service).await?;
         Ok(())
     }

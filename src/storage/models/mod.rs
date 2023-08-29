@@ -5,5 +5,5 @@ pub use bls_keystore::*;
 mod deposit_data;
 pub use deposit_data::*;
 
-use anyhow::{Result, anyhow};
 use crate::{storage::db::PgConnection, vault::PreDepositFilter};
+use anyhow::{anyhow, Result};

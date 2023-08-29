@@ -1,42 +1,27 @@
-use std::sync::Arc;
 use std::time::Duration;
 
 use crate::eth2::get_current_finality_block_number;
 use crate::storage::db::PgPool;
 use crate::storage::models::{insert_batch_logs, query_latest_block_number};
-use crate::vault::{PreDepositFilter, Vault};
+use crate::vault::PreDepositFilter;
 use anyhow::{ensure, Context, Result};
 use ethers::prelude::LogMeta;
-use ethers::prelude::SignerMiddleware;
-use ethers::types::Bytes;
-use ethers::{
-    providers::{Http, Provider},
-    signers::{LocalWallet, Wallet},
-    types::Address,
-};
-use k256::ecdsa::SigningKey;
+
 use tokio::time::sleep;
 use tracing::*;
 use url::Url;
 
+use super::VaultContract;
+
 #[derive(Clone)]
 pub struct EventService {
-    contract: Vault<SignerMiddleware<Provider<Http>, Wallet<SigningKey>>>,
+    contract: VaultContract,
     pool: PgPool,
     eth2_base: Url,
 }
 
 impl EventService {
-    pub fn new(
-        eth1_base: Url,
-        eth2_base: Url,
-        contract_addr: Address,
-        wallet: LocalWallet,
-        pool: PgPool,
-    ) -> Result<Self> {
-        let provider = ethers::providers::Provider::try_from(eth1_base.as_str())?;
-        let client = Arc::new(SignerMiddleware::new(provider, wallet));
-        let contract = Vault::new(contract_addr, client);
+    pub fn new(eth2_base: Url, contract: VaultContract, pool: PgPool) -> Result<Self> {
         Ok(Self {
             contract,
             pool,
