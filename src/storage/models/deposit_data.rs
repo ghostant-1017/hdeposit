@@ -15,7 +15,7 @@ impl TryFrom<Row> for StoredDepositData {
     fn try_from(row: Row) -> std::result::Result<Self, Self::Error> {
         let pk: i64 = row.try_get("pk")?;
         let deposit_data: serde_json::Value = row.try_get("data")?;
-        let evt_pk = row.try_get("evt_pk")?;
+        let evt_pk = row.try_get("pre_deposit_event_pk")?;
         let deposit_data = serde_json::from_value(deposit_data)?;
         Ok(StoredDepositData { pk, deposit_data, evt_pk })
     }
@@ -44,7 +44,7 @@ pub async fn insert_deposit_data(
 }
 
 pub async fn query_pending_deposit_data(client: &Client) -> Result<Vec<StoredDepositData>>{
-    let rows = client.query("select * from deposit_data asc pk;", &[]).await?;
+    let rows = client.query("select * from deposit_data order by pk ASC;", &[]).await?;
     let mut result = vec![];
     for row in rows {
         result.push(row.try_into()?)
