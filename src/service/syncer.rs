@@ -52,22 +52,6 @@ impl EventService {
         // Ok(())
     }
 
-    async fn fetch_last_synced(&self) -> Result<Option<u64>> {
-        let mut conn = self.pool.get().await?;
-        let height = query_latest_block_number(&mut conn).await?;
-        Ok(height)
-    }
-
-    async fn get_current_finality_block_number(&self) -> Result<u64> {
-        get_current_finality_block_number(&self.eth2_base).await
-    }
-
-    async fn insert_batch(&self, logs: &Vec<(PreDepositFilter, LogMeta)>) -> Result<()> {
-        let mut conn = self.pool.get().await?;
-        insert_batch_logs(&mut conn, logs).await?;
-        Ok(())
-    }
-
     async fn do_update(&self, from: u64) -> Result<u64> {
         let to = self
             .get_current_finality_block_number()
@@ -92,7 +76,27 @@ impl EventService {
         );
         Ok(to)
     }
+}
 
+// DB trait
+impl EventService {
+    async fn fetch_last_synced(&self) -> Result<Option<u64>> {
+        let conn = self.pool.get().await?;
+        let height = query_latest_block_number(&conn).await?;
+        Ok(height)
+    }
+
+    async fn insert_batch(&self, logs: &Vec<(PreDepositFilter, LogMeta)>) -> Result<()> {
+        let mut conn = self.pool.get().await?;
+        let tx = conn.transaction().await?;
+        insert_batch_logs(tx.client(), logs).await?;
+        tx.commit().await?;
+        Ok(())
+    }
+}
+
+// Eth1
+impl EventService {
     pub async fn query_pre_deposit_logs(
         &self,
         from: u64,
@@ -106,5 +110,12 @@ impl EventService {
             .query_with_meta()
             .await?;
         Ok(logs)
+    }
+}
+
+// Eth2
+impl EventService {
+    async fn get_current_finality_block_number(&self) -> Result<u64> {
+        get_current_finality_block_number(&self.eth2_base).await
     }
 }

@@ -29,27 +29,25 @@ impl TryFrom<Row> for StoredPreDepositEvt {
 }
 
 pub async fn insert_batch_logs(
-    conn: &mut PgConnection<'_>,
+    client: &Client,
     logs: &Vec<(PreDepositFilter, LogMeta)>,
 ) -> Result<()> {
-    let tx = conn.transaction().await?;
     for log in logs {
         let pre_deposit_filter = serde_json::to_value(&log.0)?;
         let log_meta = serde_json::to_value(&log.1)?;
         let block_number = log.1.block_number.as_u64() as i64;
-        tx.execute(
+        client.execute(
             "insert into pre_deposit_events (pre_deposit_filter, log_meta, block_number) values 
         ($1, $2, $3);",
             &[&pre_deposit_filter, &log_meta, &block_number],
         )
         .await?;
     }
-    tx.commit().await?;
     Ok(())
 }
 
-pub async fn query_latest_block_number(conn: &mut PgConnection<'_>) -> Result<Option<u64>> {
-    let row = conn
+pub async fn query_latest_block_number(client: &Client) -> Result<Option<u64>> {
+    let row = client
         .query_one("select max(block_number) from pre_deposit_events;", &[])
         .await?;
     let height: Option<i64> = row.get("max");
