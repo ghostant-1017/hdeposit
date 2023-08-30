@@ -53,7 +53,7 @@ pub fn generate_deposit_data(
 }
 
 
-pub fn generate_deposit_calldata(batch: Vec<DepositData>) -> (EBytes, EBytes, Vec<[u8;32]>, Bytes, Vec<u32>) {
+pub fn generate_deposit_calldata(batch: Vec<DepositData>) -> (EBytes, EBytes, Vec<[u8;32]>, EBytes, Vec<u32>) {
     let mut hm: HashMap<Hash256, Vec<DepositData>> = HashMap::new();
     // Group by withdrawl_credentials
     for deposit_data in batch {
