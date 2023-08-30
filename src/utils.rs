@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 
 use anyhow::Result;
 use bytes::BufMut;
@@ -52,8 +53,25 @@ pub fn generate_deposit_data(
     Ok(deposit_data)
 }
 
+pub struct BatchDepositCallData(EBytes, EBytes, Vec<[u8;32]>, EBytes, Vec<u32>);
 
-pub fn generate_deposit_calldata(batch: Vec<DepositData>) -> (EBytes, EBytes, Vec<[u8;32]>, EBytes, Vec<u32>) {
+impl Display for BatchDepositCallData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("pubkeys: {}\n", self.0.to_string()))?;
+        f.write_str(&format!("signatures: {}\n", self.1.to_string()))?;
+        let mut roots = BytesMut::new();
+        for root in self.2.iter() {
+            roots.put(Bytes::copy_from_slice(root));
+        }
+        let roots = EBytes::from(roots.freeze());
+        f.write_str(&format!("deposit_data_roots: {}\n", roots.to_string()))?;
+        f.write_str(&format!("withdrawl_credentials: {}\n", self.3.to_string()))?;
+        f.write_str(&format!("ns: {:?}\n", self.4))?;
+        Ok(())
+    }
+}
+
+pub fn generate_deposit_calldata(batch: Vec<DepositData>) -> BatchDepositCallData {
     let mut hm: HashMap<Hash256, Vec<DepositData>> = HashMap::new();
     // Group by withdrawl_credentials
     for deposit_data in batch {
@@ -81,7 +99,7 @@ pub fn generate_deposit_calldata(batch: Vec<DepositData>) -> (EBytes, EBytes, Ve
     let signatures = signatures.freeze();
     let withdrawal_credentials = withdrawal_credentials.freeze();
 
-    (pubkeys.into(), signatures.into(), deposit_data_roots, withdrawal_credentials.into(), ns)
+    BatchDepositCallData(pubkeys.into(), signatures.into(), deposit_data_roots, withdrawal_credentials.into(), ns)
 }
 
 #[cfg(test)]

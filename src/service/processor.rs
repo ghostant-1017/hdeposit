@@ -60,7 +60,7 @@ impl ProcessorService {
         let batch_stored: Vec<StoredDepositData> = self.select_pending_deposit_data(&conn).await?;
         let batch_data: Vec<DepositData> = batch_stored.into_iter().map(|stored| stored.deposit_data).collect();
         let calldata = generate_deposit_calldata(batch_data);
-        info!("Prepare to `deposit` with calldata: {:?}", calldata);
+        info!("Prepare to `deposit` with calldata: {}", calldata);
         // self.contract.deposit(calldata.0, calldata.1, calldata.2, calldata.3, calldata.4).send()
         Ok(())
     }
