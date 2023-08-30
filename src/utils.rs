@@ -92,4 +92,9 @@ mod tests {
     fn test_gen_abi() {
         rust_file_generation().unwrap()
     }
+
+    #[test]
+    fn test_generate_calldata() {
+        
+    }
 }

@@ -1,8 +1,6 @@
 use anyhow::Result;
-use bb8_postgres::tokio_postgres::Client;
-use ethers::types::Bytes;
+use bb8_postgres::tokio_postgres::{Client, Row};
 use lighthouse_types::DepositData;
-use tree_hash::TreeHash;
 
 use super::{StoredKeyStore, StoredPreDepositEvt};
 
@@ -12,30 +10,44 @@ pub struct StoredDepositData {
     pub evt_pk: i64,
 }
 
+impl TryFrom<Row> for StoredDepositData {
+    type Error = anyhow::Error;
+    fn try_from(row: Row) -> std::result::Result<Self, Self::Error> {
+        let pk: i64 = row.try_get("pk")?;
+        let deposit_data: serde_json::Value = row.try_get("data")?;
+        let evt_pk = row.try_get("evt_pk")?;
+        let deposit_data = serde_json::from_value(deposit_data)?;
+        Ok(StoredDepositData { pk, deposit_data, evt_pk })
+    }
+}
+
 pub async fn insert_deposit_data(
     client: &Client,
     evt: &StoredPreDepositEvt,
     deposit_data: &DepositData,
     _key_store: &StoredKeyStore,
 ) -> Result<i64> {
-    let deposit_data_root = deposit_data.tree_hash_root();
-    let withdrawal_credential = evt.log.withdrawal_credential.clone();
+    let data = serde_json::to_value(deposit_data)?;
     let pre_deposit_event_pk = evt.pk;
-    let signature = deposit_data.signature.clone();
     let row = client
         .query_one(
-            "insert into deposit_data 
-    (pre_deposit_event_pk, signature, deposit_data_root, withdrawal_credential)
-    values
-    ($1, $2, $3, $4) returning pk;",
+            "insert into deposit_data (pre_deposit_event_pk, data) values
+            ($1, $2) returning pk;",
             &[
                 &pre_deposit_event_pk,
-                &signature.to_string(),
-                &deposit_data_root.to_string(),
-                &withdrawal_credential.to_string(),
+                &data,
             ],
         )
         .await?;
     let id: i64 = row.try_get("pk")?;
     Ok(id)
+}
+
+pub async fn query_pending_deposit_data(client: &Client) -> Result<Vec<StoredDepositData>>{
+    let rows = client.query("select * from deposit_data asc pk;", &[]).await?;
+    let mut result = vec![];
+    for row in rows {
+        result.push(row.try_into()?)
+    }
+    Ok(result)
 }

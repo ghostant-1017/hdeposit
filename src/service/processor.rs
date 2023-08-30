@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::storage::db::PgPool;
-use crate::storage::models::StoredDepositData;
+use crate::storage::models::{StoredDepositData, query_pending_deposit_data};
+use crate::utils::generate_deposit_calldata;
 use crate::{
     storage::models::{
         insert_deposit_data, query_unflattened_events, query_unused_key_store,
@@ -55,6 +56,12 @@ impl ProcessorService {
         info!("[Processor] do update...");
         self.flattern().await?;
         // Preprare calldata to call contract
+        let conn = self.pool.get().await?;
+        let batch_stored: Vec<StoredDepositData> = self.select_pending_deposit_data(&conn).await?;
+        let batch_data: Vec<DepositData> = batch_stored.into_iter().map(|stored| stored.deposit_data).collect();
+        let calldata = generate_deposit_calldata(batch_data);
+        info!("Prepare to `deposit` with calldata: {:?}", calldata);
+        // self.contract.deposit(calldata.0, calldata.1, calldata.2, calldata.3, calldata.4).send()
         Ok(())
     }
 
@@ -145,6 +152,11 @@ impl ProcessorService {
             .context("insert deposit data")?;
         info!("Insert return deposit data id: {}", deposit_data_id);
         Ok(deposit_data_id)
+    }
+
+    async fn select_pending_deposit_data(&self, client: &Client) -> Result<Vec<StoredDepositData>>{
+        let batch = query_pending_deposit_data(client).await?;
+        Ok(batch)
     }
 
     async fn update_key_store_fk(
