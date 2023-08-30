@@ -36,14 +36,14 @@ impl EventService {
             .context("fetch last synced")?;
         let mut from = synced.unwrap_or(start).saturating_add(1);
         // tokio::spawn(async move {
-        info!("Start syncing eth1 events from: {}", from);
+        info!("[Syncer]Start syncing eth1 events from: {}", from);
         loop {
             match self.do_update(from).await {
                 Ok(synced) => {
                     from = synced;
                 }
                 Err(err) => {
-                    error!("Eth1 sync error: {:#}", err);
+                    error!("[Syncer]Eth1 sync error: {:#}", err);
                 }
             };
             sleep(Duration::from_secs(12)).await;
@@ -73,16 +73,16 @@ impl EventService {
             .get_current_finality_block_number()
             .await
             .context("get current finality")?;
-        info!("Current finality block number: {to}");
-        ensure!(from <= to, "Critical bug or Ethereum finality broken");
+        info!("[Syncer]Current finality block number: {to}");
+        ensure!(from <= to, "Critical bug or Ethereum finality broken, synced: {}, finality: {}", from, to);
         if from == to {
             return Ok(to);
         }
-        info!("Querying logs from {from} to {to}");
+        info!("[Syncer]Querying logs from {from} to {to}");
         let logs = self.query_pre_deposit_logs(from, to).await?;
         self.insert_batch(&logs).await?;
         info!(
-            "Insert logs from {from} to {to} success, nums: {}",
+            "[Syncer]Insert logs from {from} to {to} success, nums: {}",
             logs.len()
         );
         Ok(to)

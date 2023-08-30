@@ -61,7 +61,7 @@ impl ProcessorService {
         let batch_data: Vec<DepositData> = batch_stored.into_iter().map(|stored| stored.deposit_data).collect();
         if batch_data.len() > 0 {
             let calldata = generate_deposit_calldata(batch_data);
-            info!("Prepare to `deposit` with calldata: {}", calldata);
+            info!("[Processor]Prepare to `deposit` with calldata: {}", calldata);
         }
         // self.contract.deposit(calldata.0, calldata.1, calldata.2, calldata.3, calldata.4).send()
         Ok(())
@@ -84,7 +84,7 @@ impl ProcessorService {
         if num_evts == 0 {
             return Ok(());
         }
-        info!("Found pending events num: {}", evts.len());
+        info!("[Processor]Found pending events num: {}", evts.len());
         let mut total = 0;
         for evt in evts {
             total += evt.log.n.as_u64();
@@ -120,7 +120,7 @@ impl ProcessorService {
             self.update_events_to_flattened(client, &evt).await?;
         }
         tx.commit().await?;
-        info!("Successfully flattern events: {num_evts}, deposit data total: {total}.");
+        info!("[Processor]Successfully flattern events: {num_evts}, deposit data total: {total}.");
         Ok(())
     }
 
