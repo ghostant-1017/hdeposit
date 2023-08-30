@@ -1,15 +1,16 @@
 use crate::{
+    config::PRATER_CONFIG,
     logger,
     service::{EventService, ProcessorService},
     storage::db::initial_pg_pool,
     vault::Vault,
-    wallet::inital_wallet_from_env, config::PRATER_CONFIG,
+    wallet::inital_wallet_from_env,
 };
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ethers::prelude::SignerMiddleware;
 use ethers::types::Address;
-use lighthouse_types::{ChainSpec, Config, MinimalEthSpec, MainnetEthSpec};
+use lighthouse_types::{ChainSpec, Config, MainnetEthSpec};
 use std::{str::FromStr, sync::Arc};
 use tracing::*;
 use url::Url;
@@ -65,7 +66,7 @@ impl Cli {
             _ => {
                 let config: Config = serde_yaml::from_str(PRATER_CONFIG)?;
                 ChainSpec::from_config::<MainnetEthSpec>(&config).ok_or(anyhow!("from config"))?
-            },
+            }
         };
         let proc_service = ProcessorService::new(pool, &self.password, spec, contract);
         run(self.start, evt_service, proc_service).await?;
@@ -74,7 +75,7 @@ impl Cli {
 }
 
 async fn run(start: u64, evt_service: EventService, proc_service: ProcessorService) -> Result<()> {
-    proc_service.start_update_service();
+    proc_service.start_update_service()?;
     evt_service.start_update_service(start).await?;
     Ok(())
 }

@@ -3,10 +3,11 @@ use std::fmt::Display;
 
 use anyhow::Result;
 use bytes::BufMut;
-use ethers::prelude::Abigen;
-use ethers::types::Bytes as EBytes;
 use bytes::Bytes;
 use bytes::BytesMut;
+use ethers::prelude::Abigen;
+use ethers::types::Bytes as EBytes;
+#[allow(dead_code)]
 pub fn rust_file_generation() -> Result<()> {
     let abi_source = "./abi/Vault.abi";
     let out_file = "./Vault.rs";
@@ -53,16 +54,20 @@ pub fn generate_deposit_data(
     Ok(deposit_data)
 }
 
-pub struct BatchDepositCallData(EBytes, EBytes, Vec<[u8;32]>, EBytes, Vec<u32>);
+pub struct BatchDepositCallData(EBytes, EBytes, Vec<[u8; 32]>, EBytes, Vec<u32>);
 
 impl Display for BatchDepositCallData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("[BatchDepositData]\n")?;
-        f.write_str(&format!("pubkeys: {}\n", self.0.to_string()))?;
-        f.write_str(&format!("signatures: {}\n", self.1.to_string()))?;
-        let roots: Vec<_> = self.2.iter().map(|root| EBytes::from(root).to_string()).collect();
+        f.write_str(&format!("pubkeys: {}\n", self.0))?;
+        f.write_str(&format!("signatures: {}\n", self.1))?;
+        let roots: Vec<_> = self
+            .2
+            .iter()
+            .map(|root| EBytes::from(root).to_string())
+            .collect();
         f.write_str(&format!("deposit_data_roots: [{}]\n", roots.join(",")))?;
-        f.write_str(&format!("withdrawl_credentials: {}\n", self.3.to_string()))?;
+        f.write_str(&format!("withdrawl_credentials: {}\n", self.3))?;
         f.write_str(&format!("ns: {:?}\n", self.4))?;
         Ok(())
     }
@@ -72,8 +77,10 @@ pub fn generate_deposit_calldata(batch: Vec<DepositData>) -> BatchDepositCallDat
     let mut hm: HashMap<Hash256, Vec<DepositData>> = HashMap::new();
     // Group by withdrawl_credentials
     for deposit_data in batch {
-        let wc = deposit_data.withdrawal_credentials.clone();
-        hm.entry(wc).and_modify(|v| v.push(deposit_data.clone())).or_insert(vec![deposit_data]);
+        let wc = deposit_data.withdrawal_credentials;
+        hm.entry(wc)
+            .and_modify(|v| v.push(deposit_data.clone()))
+            .or_insert(vec![deposit_data]);
     }
 
     let mut pubkeys = BytesMut::new();
@@ -81,10 +88,8 @@ pub fn generate_deposit_calldata(batch: Vec<DepositData>) -> BatchDepositCallDat
     let mut deposit_data_roots = vec![];
     let mut withdrawal_credentials = BytesMut::new();
     let mut ns = vec![];
-    for (wc, batch) in hm { 
-        batch
-        .iter()
-        .for_each(|dd| {
+    for (wc, batch) in hm {
+        batch.iter().for_each(|dd| {
             pubkeys.put(Bytes::copy_from_slice(&dd.pubkey.serialize()));
             signatures.put(Bytes::copy_from_slice(&dd.signature.serialize()));
             deposit_data_roots.push(dd.tree_hash_root().to_fixed_bytes());
@@ -96,7 +101,13 @@ pub fn generate_deposit_calldata(batch: Vec<DepositData>) -> BatchDepositCallDat
     let signatures = signatures.freeze();
     let withdrawal_credentials = withdrawal_credentials.freeze();
 
-    BatchDepositCallData(pubkeys.into(), signatures.into(), deposit_data_roots, withdrawal_credentials.into(), ns)
+    BatchDepositCallData(
+        pubkeys.into(),
+        signatures.into(),
+        deposit_data_roots,
+        withdrawal_credentials.into(),
+        ns,
+    )
 }
 
 #[cfg(test)]
@@ -109,7 +120,5 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_calldata() {
-        
-    }
+    fn test_generate_calldata() {}
 }

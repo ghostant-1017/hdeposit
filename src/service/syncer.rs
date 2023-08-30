@@ -49,7 +49,7 @@ impl EventService {
             sleep(Duration::from_secs(12)).await;
         }
         // });
-        Ok(())
+        // Ok(())
     }
 
     async fn fetch_last_synced(&self) -> Result<Option<u64>> {
@@ -74,7 +74,12 @@ impl EventService {
             .await
             .context("get current finality")?;
         info!("[Syncer]Current finality block number: {to}");
-        ensure!(from <= to, "Critical bug or Ethereum finality broken, synced: {}, finality: {}", from, to);
+        ensure!(
+            from <= to,
+            "Critical bug or Ethereum finality broken, synced: {}, finality: {}",
+            from,
+            to
+        );
         if from == to {
             return Ok(to);
         }

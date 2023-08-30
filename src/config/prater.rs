@@ -1,4 +1,4 @@
-pub const PRATER_CONFIG: &'static str = "
+pub const PRATER_CONFIG: &str = "
 # Prater config
 
 # Extends the mainnet preset

@@ -1,4 +1,5 @@
 pub mod cli;
+mod config;
 mod eth1;
 mod eth2;
 mod logger;
@@ -7,4 +8,3 @@ mod storage;
 mod utils;
 mod vault;
 mod wallet;
-mod config;

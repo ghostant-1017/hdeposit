@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::storage::db::PgPool;
-use crate::storage::models::{StoredDepositData, query_pending_deposit_data};
+use crate::storage::models::{query_pending_deposit_data, StoredDepositData};
 use crate::utils::generate_deposit_calldata;
 use crate::{
     storage::models::{
@@ -10,11 +10,10 @@ use crate::{
         update_events_to_flattened, update_key_store_fk, StoredKeyStore, StoredPreDepositEvt,
     },
     utils::generate_deposit_data,
-    vault::PreDepositFilter,
 };
 use anyhow::{Context, Result};
 use bb8_postgres::tokio_postgres::Client;
-use ethers::prelude::LogMeta;
+
 // use ethers::types::Bytes;
 use lighthouse_types::{ChainSpec, DepositData, Hash256};
 use tokio::time::sleep;
@@ -27,16 +26,16 @@ pub struct ProcessorService {
     pool: PgPool,
     password: String,
     spec: ChainSpec,
-    contract: VaultContract,
+    _contract: VaultContract,
 }
 
 impl ProcessorService {
-    pub fn new(pool: PgPool, password: &str, spec: ChainSpec, contract: VaultContract) -> Self {
+    pub fn new(pool: PgPool, password: &str, spec: ChainSpec, _contract: VaultContract) -> Self {
         Self {
             pool,
             password: password.to_owned(),
             spec,
-            contract,
+            _contract,
         }
     }
 
@@ -58,10 +57,16 @@ impl ProcessorService {
         // Preprare calldata to call contract
         let conn = self.pool.get().await?;
         let batch_stored: Vec<StoredDepositData> = self.select_pending_deposit_data(&conn).await?;
-        let batch_data: Vec<DepositData> = batch_stored.into_iter().map(|stored| stored.deposit_data).collect();
-        if batch_data.len() > 0 {
+        let batch_data: Vec<DepositData> = batch_stored
+            .into_iter()
+            .map(|stored| stored.deposit_data)
+            .collect();
+        if !batch_data.is_empty() {
             let calldata = generate_deposit_calldata(batch_data);
-            info!("[Processor]Prepare to `deposit` with calldata: {}", calldata);
+            info!(
+                "[Processor]Prepare to `deposit` with calldata: {}",
+                calldata
+            );
         }
         // self.contract.deposit(calldata.0, calldata.1, calldata.2, calldata.3, calldata.4).send()
         Ok(())
@@ -124,7 +129,7 @@ impl ProcessorService {
         Ok(())
     }
 
-    async fn call_contract_deposit(&self, _data: HashMap<Hash256, Vec<StoredDepositData>>) {
+    async fn _call_contract_deposit(&self, _data: HashMap<Hash256, Vec<StoredDepositData>>) {
         todo!()
     }
 }
@@ -156,7 +161,7 @@ impl ProcessorService {
         Ok(deposit_data_id)
     }
 
-    async fn select_pending_deposit_data(&self, client: &Client) -> Result<Vec<StoredDepositData>>{
+    async fn select_pending_deposit_data(&self, client: &Client) -> Result<Vec<StoredDepositData>> {
         let batch = query_pending_deposit_data(client).await?;
         Ok(batch)
     }
