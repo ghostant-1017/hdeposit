@@ -7,3 +7,4 @@ mod storage;
 mod utils;
 mod vault;
 mod wallet;
+mod config;

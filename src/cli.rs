@@ -3,13 +3,13 @@ use crate::{
     service::{EventService, ProcessorService},
     storage::db::initial_pg_pool,
     vault::Vault,
-    wallet::inital_wallet_from_env,
+    wallet::inital_wallet_from_env, config::PRATER_CONFIG,
 };
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 use ethers::prelude::SignerMiddleware;
 use ethers::types::Address;
-use lighthouse_types::ChainSpec;
+use lighthouse_types::{ChainSpec, Config, MinimalEthSpec, MainnetEthSpec};
 use std::{str::FromStr, sync::Arc};
 use tracing::*;
 use url::Url;
@@ -62,7 +62,10 @@ impl Cli {
         let evt_service = EventService::new(self.eth2_endpoint, contract.clone(), pool.clone())?;
         let spec = match self.chain_id {
             0 => ChainSpec::mainnet(),
-            _ => ChainSpec::gnosis(),
+            _ => {
+                let config: Config = serde_yaml::from_str(PRATER_CONFIG)?;
+                ChainSpec::from_config::<MainnetEthSpec>(&config).ok_or(anyhow!("from config"))?
+            },
         };
         let proc_service = ProcessorService::new(pool, &self.password, spec, contract);
         run(self.start, evt_service, proc_service).await?;
