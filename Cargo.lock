@@ -1837,6 +1837,7 @@ dependencies = [
  "anyhow",
  "bb8-postgres",
  "bls",
+ "bytes",
  "clap",
  "eth2_keystore",
  "ethers",

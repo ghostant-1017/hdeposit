@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use crate::storage::db::PgPool;
+use crate::storage::models::StoredDepositData;
 use crate::{
     storage::models::{
         insert_deposit_data, query_unflattened_events, query_unused_key_store,
@@ -12,7 +14,8 @@ use crate::{
 use anyhow::{Context, Result};
 use bb8_postgres::tokio_postgres::Client;
 use ethers::prelude::LogMeta;
-use lighthouse_types::{ChainSpec, DepositData};
+// use ethers::types::Bytes;
+use lighthouse_types::{ChainSpec, DepositData, Hash256};
 use tokio::time::sleep;
 use tracing::*;
 
@@ -112,7 +115,7 @@ impl ProcessorService {
         Ok(())
     }
 
-    async fn call_contract_deposit(&self, _logs: Vec<(PreDepositFilter, LogMeta)>) {
+    async fn call_contract_deposit(&self, _data: HashMap<Hash256, Vec<StoredDepositData>>) {
         todo!()
     }
 }

@@ -1,5 +1,6 @@
 use anyhow::Result;
 use bb8_postgres::tokio_postgres::Client;
+use ethers::types::Bytes;
 use lighthouse_types::DepositData;
 use tree_hash::TreeHash;
 
@@ -7,6 +8,8 @@ use super::{StoredKeyStore, StoredPreDepositEvt};
 
 pub struct StoredDepositData {
     pub pk: i64,
+    pub deposit_data: DepositData,
+    pub evt_pk: i64,
 }
 
 pub async fn insert_deposit_data(
