@@ -57,14 +57,11 @@ pub struct BatchDepositCallData(EBytes, EBytes, Vec<[u8;32]>, EBytes, Vec<u32>);
 
 impl Display for BatchDepositCallData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[BatchDepositData]\n")?;
         f.write_str(&format!("pubkeys: {}\n", self.0.to_string()))?;
         f.write_str(&format!("signatures: {}\n", self.1.to_string()))?;
-        let mut roots = BytesMut::new();
-        for root in self.2.iter() {
-            roots.put(Bytes::copy_from_slice(root));
-        }
-        let roots = EBytes::from(roots.freeze());
-        f.write_str(&format!("deposit_data_roots: {}\n", roots.to_string()))?;
+        let roots: Vec<_> = self.2.iter().map(|root| EBytes::from(root).to_string()).collect();
+        f.write_str(&format!("deposit_data_roots: [{}]\n", roots.join(",")))?;
         f.write_str(&format!("withdrawl_credentials: {}\n", self.3.to_string()))?;
         f.write_str(&format!("ns: {:?}\n", self.4))?;
         Ok(())
