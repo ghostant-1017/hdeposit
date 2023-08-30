@@ -55,7 +55,6 @@ impl Cli {
         let pool = initial_pg_pool(self.dsn).await?;
         let contract_addr =
             Address::from_str(&self.contract).context("parse contract address error")?;
-        info!("Starting event service...");
         let provider = ethers::providers::Provider::try_from(self.eth1_endpoint.as_str())?;
         let client = Arc::new(SignerMiddleware::new(provider, wallet));
         let contract = Vault::new(contract_addr, client);
