@@ -170,6 +170,7 @@ impl ProcessorService {
             None => return Ok(())
         };
         info!("Found pending transaction: {}", eth_tx.tx_hash.to_string());
+        info!("Prepare send raw data: {}", eth_tx.raw_tx());
         let pending_tx = self.send_raw_transaction(eth_tx.raw_tx()).await?;
         ensure!(pending_tx == eth_tx.tx_hash, "transaction hash not match");
         self.wait_for_finality(eth_tx.tx_hash).await?;
@@ -224,6 +225,9 @@ impl ProcessorService {
             .sign_transaction(&tx, from)
             .await
             .context("sign transaction")?;
+        info!("Signed raw_tx: {}", tx.rlp_signed(&signature).to_string());
+        info!("TransactionHash: {}", tx.hash(&signature));
+        info!("Transaction: {}", serde_json::to_string(&tx)?);
         // let tx_hash = tx.hash(&signature);
         // info!("[Processor]Prepare to send transaction: {}", tx_hash.to_string());
         // let raw_tx = tx.rlp_signed(&signature);

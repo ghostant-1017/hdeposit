@@ -4,4 +4,4 @@ cargo run --release -- --contract 0x5469317FE035b3b0C70017726b6f98478e98325d \
 --dsn "postgresql://postgres:postgres@127.0.0.1/postgres?connect_timeout=10" \
 --password Ipfs@111 \
 --chain-id 1 \
---start 9605428
+--start 9611655
