@@ -17,7 +17,7 @@ use crate::{
 use anyhow::{ensure, Context, Result, anyhow};
 use bb8_postgres::tokio_postgres::Client;
 
-use ethers::providers::{Middleware, PendingTransaction};
+use ethers::providers::{Middleware, PendingTransaction, Provider};
 
 use ethers::types::transaction::eip2718::TypedTransaction;
 use ethers::types::{Bytes as EBytes, Signature};
@@ -37,16 +37,18 @@ pub struct ProcessorService {
     password: String,
     spec: ChainSpec,
     contract: VaultContract,
+    provider: Provider<ethers::providers::Http>,
 }
 
 impl ProcessorService {
-    pub fn new(eth2_endpoint: Url, pool: PgPool, password: &str, spec: ChainSpec, contract: VaultContract) -> Self {
+    pub fn new(eth2_endpoint: Url, pool: PgPool, password: &str, spec: ChainSpec, contract: VaultContract, provider: Provider<ethers::providers::Http>) -> Self {
         Self {
             eth2_endpoint,
             pool,
             password: password.to_owned(),
             spec,
             contract,
+            provider
         }
     }
 
@@ -232,8 +234,9 @@ impl ProcessorService {
     }
 
     async fn send_raw_transaction(&self, raw_tx: EBytes) -> Result<Hash256> {
-        let eth_client = self.contract.client();
-        let pending_tx = eth_client.send_raw_transaction(raw_tx).await?;
+        // let eth_client = self.contract.client();
+        // let pending_tx = eth_client.send_raw_transaction(raw_tx).await?;
+        let pending_tx = self.provider.send_raw_transaction(raw_tx).await?;
         Ok(pending_tx.to_owned())
     }
 }

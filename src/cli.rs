@@ -58,7 +58,7 @@ impl Cli {
         let contract_addr =
             Address::from_str(&self.contract).context("parse contract address error")?;
         let provider = ethers::providers::Provider::try_from(self.eth1_endpoint.as_str())?;
-        let client = Arc::new(SignerMiddleware::new_with_provider_chain(provider, wallet).await?);
+        let client = Arc::new(SignerMiddleware::new_with_provider_chain(provider.clone(), wallet).await?);
         let contract = Vault::new(contract_addr, client);
         let evt_service = EventService::new(self.eth2_endpoint.clone(), contract.clone(), pool.clone())?;
         let spec = match self.chain_id {
@@ -68,7 +68,7 @@ impl Cli {
                 ChainSpec::from_config::<MainnetEthSpec>(&config).ok_or(anyhow!("from config"))?
             }
         };
-        let proc_service = ProcessorService::new(self.eth2_endpoint, pool, &self.password, spec, contract);
+        let proc_service = ProcessorService::new(self.eth2_endpoint, pool, &self.password, spec, contract, provider);
         run(self.start, evt_service, proc_service).await?;
         Ok(())
     }
