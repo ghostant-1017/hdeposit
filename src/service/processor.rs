@@ -11,7 +11,7 @@ use crate::{
     },
     utils::generate_deposit_data,
 };
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
 use bb8_postgres::tokio_postgres::Client;
 
 // use ethers::types::Bytes;
@@ -144,6 +144,12 @@ impl ProcessorService {
 
     async fn select_unused_keystore(&self, client: &Client, n: u64) -> Result<Vec<StoredKeyStore>> {
         let kys = query_unused_key_store(client, n as i64).await?;
+        ensure!(
+            kys.len() == n as usize,
+            "Not enough bls keystore, expect: {}, found: {}.",
+            n,
+            kys.len()
+        );
         Ok(kys)
     }
 
@@ -157,7 +163,7 @@ impl ProcessorService {
         let deposit_data_id = insert_deposit_data(client, evt, deposit_data, ks)
             .await
             .context("insert deposit data")?;
-        info!("Insert return deposit data id: {}", deposit_data_id);
+        debug!("Insert return deposit data id: {}", deposit_data_id);
         Ok(deposit_data_id)
     }
 
@@ -172,7 +178,8 @@ impl ProcessorService {
         ks: &StoredKeyStore,
         fk: i64,
     ) -> Result<()> {
-        update_key_store_fk(client, ks, fk).await?;
+        let result = update_key_store_fk(client, ks, fk).await?;
+        ensure!(result == 1, "update bls_keystore fail");
         Ok(())
     }
 
@@ -181,7 +188,8 @@ impl ProcessorService {
         client: &Client,
         evt: &StoredPreDepositEvt,
     ) -> Result<()> {
-        update_events_to_flattened(client, evt.pk).await?;
+        let result = update_events_to_flattened(client, evt.pk).await?;
+        ensure!(result == 1, "update pre_deposit_events to flattened error");
         Ok(())
     }
 }

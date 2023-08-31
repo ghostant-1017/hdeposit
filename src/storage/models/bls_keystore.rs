@@ -1,5 +1,4 @@
 use super::*;
-use anyhow::ensure;
 use bb8_postgres::tokio_postgres::{Client, Row};
 use eth2_keystore::Keystore;
 
@@ -38,12 +37,6 @@ pub async fn query_unused_key_store(client: &Client, n: i64) -> Result<Vec<Store
         let ks = StoredKeyStore::try_from(row)?;
         result.push(ks);
     }
-    ensure!(
-        result.len() == n as usize,
-        "Not enough bls keystore, expect: {}, found: {}.",
-        n,
-        result.len()
-    );
     Ok(result)
 }
 
@@ -51,13 +44,12 @@ pub async fn update_key_store_fk(
     client: &Client,
     key_store: &StoredKeyStore,
     deposit_data_id: i64,
-) -> Result<()> {
+) -> Result<u64> {
     let result = client
         .execute(
             "update bls_keystore set deposit_data_pk = $1 where pk = $2;",
             &[&deposit_data_id, &key_store.pk],
         )
         .await?;
-    ensure!(result == 1, "update bls_keystore fail");
-    Ok(())
+    Ok(result)
 }

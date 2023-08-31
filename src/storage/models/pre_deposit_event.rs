@@ -69,13 +69,12 @@ pub async fn query_unflattened_events(client: &Client) -> Result<Vec<StoredPreDe
     Ok(result)
 }
 
-pub async fn update_events_to_flattened(client: &Client, pk: i64) -> Result<()> {
+pub async fn update_events_to_flattened(client: &Client, pk: i64) -> Result<u64> {
     let result = client
         .execute(
             "update pre_deposit_events set flattened = true where pk=$1",
             &[&pk],
         )
         .await?;
-    ensure!(result == 1, "update pre_deposit_events to flattened error");
-    Ok(())
+    Ok(result)
 }
