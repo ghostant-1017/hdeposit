@@ -146,9 +146,9 @@ impl ProcessorService {
         self.contract
             .client()
             .fill_transaction(&mut tx, None)
-            .await?;
+            .await.context("fill transaction")?;
         let from = self.contract.client().address();
-        let signature = self.contract.client().sign_transaction(&tx, from).await?;
+        let signature = self.contract.client().sign_transaction(&tx, from).await.context("sign transaction")?;
         let tx_hash = tx.hash(&signature);
         info!("[Processor]Prepare to send transaction: {}", tx_hash);
         Ok(())
