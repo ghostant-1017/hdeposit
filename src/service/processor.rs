@@ -17,6 +17,7 @@ use bb8_postgres::tokio_postgres::Client;
 use ethers::providers::Middleware;
 
 
+use ethers::types::BlockId;
 // use ethers::types::Bytes;
 use lighthouse_types::{ChainSpec, DepositData};
 use tokio::time::sleep;
@@ -146,7 +147,8 @@ impl ProcessorService {
         self.contract
             .client()
             .fill_transaction(&mut tx, None)
-            .await.context("fill transaction")?;
+            .await
+            .context("fill transaction")?;
         let from = self.contract.client().address();
         let signature = self.contract.client().sign_transaction(&tx, from).await.context("sign transaction")?;
         let tx_hash = tx.hash(&signature);
