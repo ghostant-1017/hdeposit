@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+
 use std::time::Duration;
 
 use crate::storage::db::PgPool;
 use crate::storage::models::{query_pending_deposit_data, StoredDepositData};
-use crate::utils::generate_deposit_calldata;
+use crate::utils::{generate_deposit_calldata, BatchDepositCallData};
 use crate::{
     storage::models::{
         insert_deposit_data, query_unflattened_events, query_unused_key_store,
@@ -11,11 +11,14 @@ use crate::{
     },
     utils::generate_deposit_data,
 };
-use anyhow::{Context, Result, ensure};
+use anyhow::{ensure, Context, Result};
 use bb8_postgres::tokio_postgres::Client;
 
+use ethers::providers::Middleware;
+
+
 // use ethers::types::Bytes;
-use lighthouse_types::{ChainSpec, DepositData, Hash256};
+use lighthouse_types::{ChainSpec, DepositData};
 use tokio::time::sleep;
 use tracing::*;
 
@@ -26,16 +29,16 @@ pub struct ProcessorService {
     pool: PgPool,
     password: String,
     spec: ChainSpec,
-    _contract: VaultContract,
+    contract: VaultContract,
 }
 
 impl ProcessorService {
-    pub fn new(pool: PgPool, password: &str, spec: ChainSpec, _contract: VaultContract) -> Self {
+    pub fn new(pool: PgPool, password: &str, spec: ChainSpec, contract: VaultContract) -> Self {
         Self {
             pool,
             password: password.to_owned(),
             spec,
-            _contract,
+            contract,
         }
     }
 
@@ -55,19 +58,7 @@ impl ProcessorService {
         info!("[Processor] do update...");
         self.flattern().await?;
         // Preprare calldata to call contract
-        let conn = self.pool.get().await?;
-        let batch_stored: Vec<StoredDepositData> = self.select_pending_deposit_data(&conn).await?;
-        let batch_data: Vec<DepositData> = batch_stored
-            .into_iter()
-            .map(|stored| stored.deposit_data)
-            .collect();
-        if !batch_data.is_empty() {
-            let calldata = generate_deposit_calldata(batch_data);
-            info!(
-                "[Processor]Prepare to `deposit` with calldata: {}",
-                calldata
-            );
-        }
+        self.process().await?;
         // self.contract.deposit(calldata.0, calldata.1, calldata.2, calldata.3, calldata.4).send()
         Ok(())
     }
@@ -129,8 +120,38 @@ impl ProcessorService {
         Ok(())
     }
 
-    async fn _call_contract_deposit(&self, _data: HashMap<Hash256, Vec<StoredDepositData>>) {
-        todo!()
+    async fn process(&self) -> Result<()> {
+        let conn = self.pool.get().await?;
+        let batch_stored: Vec<StoredDepositData> = self.select_pending_deposit_data(&conn).await?;
+        let batch_data: Vec<DepositData> = batch_stored
+            .into_iter()
+            .map(|stored| stored.deposit_data)
+            .collect();
+        if !batch_data.is_empty() {
+            let calldata = generate_deposit_calldata(batch_data);
+            self.call_deposit(calldata).await?;
+        }
+        Ok(())
+    }
+
+    async fn call_deposit(&self, calldata: BatchDepositCallData) -> Result<()> {
+        info!(
+            "[Processor]Prepare to `deposit` with calldata: {}",
+            calldata
+        );
+        let contract_call = self
+            .contract
+            .deposit(calldata.0, calldata.1, calldata.2, calldata.3, calldata.4);
+        let mut tx = contract_call.tx.clone();
+        self.contract
+            .client()
+            .fill_transaction(&mut tx, None)
+            .await?;
+        let from = self.contract.client().address();
+        let signature = self.contract.client().sign_transaction(&tx, from).await?;
+        let tx_hash = tx.hash(&signature);
+        info!("[Processor]Prepare to send transaction: {}", tx_hash);
+        Ok(())
     }
 }
 
@@ -191,5 +212,19 @@ impl ProcessorService {
         let result = update_events_to_flattened(client, evt.pk).await?;
         ensure!(result == 1, "update pre_deposit_events to flattened error");
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    
+
+    #[test]
+    fn test_tx_hash() {
+        // let contract_addr =
+        // Address::from_str(&self.contract).context("parse contract address error")?;
+        // let provider = ethers::providers::Provider::try_from(self.eth1_endpoint.as_str())?;
+        // let client = Arc::new(SignerMiddleware::new(provider, wallet));
+        // let contract = Vault::new(contract_addr, client);
     }
 }

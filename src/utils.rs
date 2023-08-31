@@ -54,7 +54,13 @@ pub fn generate_deposit_data(
     Ok(deposit_data)
 }
 
-pub struct BatchDepositCallData(EBytes, EBytes, Vec<[u8; 32]>, EBytes, Vec<u32>);
+pub struct BatchDepositCallData(
+    pub EBytes,
+    pub EBytes,
+    pub Vec<[u8; 32]>,
+    pub EBytes,
+    pub Vec<u32>,
+);
 
 impl Display for BatchDepositCallData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

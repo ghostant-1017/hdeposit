@@ -21,8 +21,15 @@ create table bls_keystore (
 CREATE table deposit_data (
     pk BIGSERIAL PRIMARY KEY,
     pre_deposit_event_pk BIGINT,
-    data JSON
+    data JSON,
+    
+    eth_tx_pk BIGINT NULL
 );
+
+CREATE table eth_transactions (
+    pk BIGSERIAL PRIMARY KEY,
+    tx_hash VARCHAR
+)
 
 drop table pre_deposit_events;
 drop table bls_keystore;

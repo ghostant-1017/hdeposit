@@ -1,5 +1,5 @@
 use super::*;
-use anyhow::ensure;
+
 use bb8_postgres::tokio_postgres::{Client, Row};
 use ethers::prelude::LogMeta;
 
