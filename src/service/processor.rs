@@ -1,9 +1,10 @@
 use std::time::Duration;
 
+use crate::eth2::get_current_finality_block_number;
 use crate::storage::db::PgPool;
 use crate::storage::models::{
     insert_eth_transaction, query_pending_deposit_data, update_batch_deposit_data,
-    StoredDepositData,
+    StoredDepositData, StoredEthTransaction, select_pending_eth_transactions,
 };
 use crate::utils::{generate_deposit_calldata, BatchDepositCallData};
 use crate::{
@@ -13,10 +14,10 @@ use crate::{
     },
     utils::generate_deposit_data,
 };
-use anyhow::{ensure, Context, Result};
+use anyhow::{ensure, Context, Result, anyhow};
 use bb8_postgres::tokio_postgres::Client;
 
-use ethers::providers::{Middleware};
+use ethers::providers::{Middleware, PendingTransaction};
 
 use ethers::types::transaction::eip2718::TypedTransaction;
 use ethers::types::{Bytes as EBytes, Signature};
@@ -25,11 +26,13 @@ use lighthouse_bls::Hash256;
 use lighthouse_types::{ChainSpec, DepositData};
 use tokio::time::sleep;
 use tracing::*;
+use url::Url;
 
 use super::VaultContract;
 
 const DEPOSIT_AMOUNT: u64 = 32_000_000_000;
 pub struct ProcessorService {
+    eth2_endpoint: Url,
     pool: PgPool,
     password: String,
     spec: ChainSpec,
@@ -37,8 +40,9 @@ pub struct ProcessorService {
 }
 
 impl ProcessorService {
-    pub fn new(pool: PgPool, password: &str, spec: ChainSpec, contract: VaultContract) -> Self {
+    pub fn new(eth2_endpoint: Url, pool: PgPool, password: &str, spec: ChainSpec, contract: VaultContract) -> Self {
         Self {
+            eth2_endpoint,
             pool,
             password: password.to_owned(),
             spec,
@@ -49,10 +53,15 @@ impl ProcessorService {
     pub fn start_update_service(self) -> Result<()> {
         tokio::spawn(async move {
             loop {
+                if let Err(err) = self.confirm_pending_tx().await {
+                    error!("[Processor]Confirm pending tx error: {}" ,err);
+                    sleep(Duration::from_secs(12)).await;
+                    continue;
+                }
                 if let Err(err) = self.do_update().await {
                     error!("[Processor] do update error: {:#}", err);
                 }
-                sleep(Duration::from_secs(12)).await
+                sleep(Duration::from_secs(12)).await;
             }
         });
         Ok(())
@@ -152,6 +161,31 @@ impl ProcessorService {
         Ok(())
     }
 
+    async fn confirm_pending_tx(&self) -> Result<()> {
+        let conn = self.pool.get().await?;
+        let eth_tx: StoredEthTransaction = match self.select_eth_transactions(&conn).await? {
+            Some(eth_tx) => eth_tx,
+            None => return Ok(())
+        };
+        info!("Found pending transaction: {}", eth_tx.tx_hash.to_string());
+        let _ = self.send_raw_transaction(eth_tx.raw_tx()).await;
+        self.wait_for_finality(eth_tx.tx_hash).await?;
+        Ok(())
+    }
+
+    async fn wait_for_finality(&self, tx_hash: Hash256) -> Result<()> {
+        let eth_client = self.contract.client();
+        let provider = eth_client.provider();
+        loop {
+            let pending_tx = PendingTransaction::new(tx_hash, provider);
+            let receipt = pending_tx.await?.ok_or(anyhow!("Transaction not found"))?;
+            let finality = get_current_finality_block_number(&self.eth2_endpoint).await?;
+            if receipt.block_number.ok_or(anyhow!("block number not found"))? <= finality.into() {
+                return Ok(())
+            }
+        }
+    } 
+
     async fn prepare_batch_deposit_data(
         &self,
         client: &Client,
@@ -220,6 +254,15 @@ impl ProcessorService {
             kys.len()
         );
         Ok(kys)
+    }
+
+    async fn select_eth_transactions(&self, client: &Client) -> Result<Option<StoredEthTransaction>> {
+        let mut txs = select_pending_eth_transactions(client).await?;
+        ensure!(txs.len() <= 1, "Critical bug, pending transactions in db should be less than 1, found: {}", txs.len());
+        if txs.is_empty() {
+            return Ok(None)
+        }
+        return Ok(Some(txs.pop().unwrap()))
     }
 
     async fn insert_eth_transaction(
@@ -291,6 +334,11 @@ impl ProcessorService {
 
 #[cfg(test)]
 mod tests {
+    use std::env;
+
+    use ethers::{types::Bytes, utils::hex::FromHex, providers::PendingTransaction};
+    use lighthouse_types::Hash256;
+
 
     #[test]
     fn test_tx_hash() {
@@ -299,5 +347,18 @@ mod tests {
         // let provider = ethers::providers::Provider::try_from(self.eth1_endpoint.as_str())?;
         // let client = Arc::new(SignerMiddleware::new(provider, wallet));
         // let contract = Vault::new(contract_addr, client);
+    }
+    #[tokio::test]
+    async fn test_pending_tx() {
+        env::set_var("http_proxy", "http://127.0.0.1:59527");
+        env::set_var("https_proxy", "http://127.0.0.1:59527");
+        let tx_hex = "0x801b4041772a56b891537d57c01298a582a90b003fe4eef5dd09b624bb11174a";
+        let eth1_endpoint = "https://eth.getblock.io/310a66fb-9df2-4436-a22f-b7d7d28092e9/goerli/";
+        let provider = ethers::providers::Provider::try_from(eth1_endpoint).unwrap();
+        let tx_hash = Bytes::from_hex(tx_hex).unwrap();
+        let tx_hash = Hash256::from_slice(&tx_hash);
+        let pending_tx = PendingTransaction::new(tx_hash, &provider).confirmations(12);
+        let receipt = pending_tx.await.unwrap();
+        println!("{:?}", receipt);
     }
 }

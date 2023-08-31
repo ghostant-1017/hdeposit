@@ -30,7 +30,8 @@ CREATE table eth_transactions (
     pk BIGSERIAL PRIMARY KEY,
     tx_hash VARCHAR,
     tx JSON,
-    signature VARCHAR
+    signature VARCHAR,
+    finality BOOLEAN DEFAULT FALSE
 );
 
 drop table pre_deposit_events;

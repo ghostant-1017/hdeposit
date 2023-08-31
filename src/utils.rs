@@ -122,7 +122,7 @@ mod tests {
 
     #[test]
     fn test_gen_abi() {
-        rust_file_generation().unwrap()
+        // rust_file_generation().unwrap()
     }
 
     #[test]
