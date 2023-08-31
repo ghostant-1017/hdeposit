@@ -17,7 +17,7 @@ impl TryFrom<Row> for StoredEthTransaction {
     fn try_from(row: Row) -> std::result::Result<Self, Self::Error> {
         let pk: i64 = row.try_get("pk")?;
         let tx_hash: String = row.try_get("tx_hash")?;
-        let tx_hash: Hash256 = serde_json::from_str(&tx_hash)?;
+        let tx_hash = serde_json::from_str(&tx_hash)?;
         let tx: serde_json::Value = row.try_get("tx")?;
         let tx: TypedTransaction = serde_json::from_value(tx)?;
         let signature: String = row.try_get("signature")?;
@@ -38,12 +38,12 @@ pub async fn insert_eth_transaction(
     tx: TypedTransaction,
     signature: Signature,
 ) -> Result<i64> {
-    let tx_hash = tx.hash(&signature).to_string();
+    let tx_hash = tx.hash(&signature);
     let tx = serde_json::to_value(tx)?;
     let result = client
         .query_one(
             "insert into eth_transactions (tx_hash, tx, signature) values ($1, $2, $3) returning pk;",
-            &[&tx_hash, &tx, &signature.to_string()],
+            &[&serde_json::to_string(&tx_hash)?, &tx, &serde_json::to_string(&signature)?],
         )
         .await?;
     let pk = result.try_get("pk")?;
