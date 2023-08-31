@@ -1,7 +1,7 @@
-insert into bls_keystore (key_store) values (
+insert into bls_keystore (keystore) values (
 '{"crypto": {"kdf": {"function": "scrypt", "params": {"dklen": 32, "n": 262144, "r": 8, "p": 1, "salt": "0de2ce3ed2cc9c5bf19979830f391ac96f04e2d52276d7653b0f59006dc41703"}, "message": ""}, "checksum": {"function": "sha256", "params": {}, "message": "c1feccba3812bb3b6f44d267c602da929461b92810965ad4bdac022c0a120f32"}, "cipher": {"function": "aes-128-ctr", "params": {"iv": "3fe97845be9a9711287bb0c96060fc5e"}, "message": "abab7baaa97be31437ec0ec6be3a0bbf3a4fe98ee3477cd461b0d407ab9505e7"}}, "description": "", "pubkey": "b9aec84156951bd41308e70818bc2fff95b1a04148d47761ef87319e4a46fd89b81d02283462a397dde6eeef6ecd9848", "path": "m/12381/3600/0/0/0", "uuid": "7be3359e-7eb3-4a60-9ac7-659c0086bc17", "version": 4}'
 );
 
-insert into bls_keystore (key_store) values (
+insert into bls_keystore (keystore) values (
 '{"crypto": {"kdf": {"function": "scrypt", "params": {"dklen": 32, "n": 262144, "r": 8, "p": 1, "salt": "0de2ce3ed2cc9c5bf19979830f391ac96f04e2d52276d7653b0f59006dc41703"}, "message": ""}, "checksum": {"function": "sha256", "params": {}, "message": "e37bbe5d94fb9afac912ad108d60b1ce9ce4e5b69098ce0a79a27416288b72d9"}, "cipher": {"function": "aes-128-ctr", "params": {"iv": "3fe97845be9a9711287bb0c96060fc5e"}, "message": "e65f1115c85c24fa96b416979fec7215c45cc096d4447ae478bf0b0292f70cf8"}}, "description": "", "pubkey": "b3df09da1de4e9e77871b41ef3c3a624f82ced495b96efc3453b6852fa809d77b0cd91bb3d2f19eafd70951d6be6f00c", "path": "m/12381/3600/1/0/0", "uuid": "7b5f3740-d8b7-41be-b1ce-f4bef9b27376", "version": 4}'
 );

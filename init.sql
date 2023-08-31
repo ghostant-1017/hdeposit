@@ -14,7 +14,7 @@ create table pre_deposit_events (
 
 create table bls_keystore (
     pk BIGSERIAL PRIMARY KEY,
-    key_store JSON,
+    keystore JSON,
     deposit_data_pk BIGINT NULL
 );
 

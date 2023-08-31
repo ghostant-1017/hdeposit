@@ -29,7 +29,7 @@ pub async fn insert_deposit_data(
     client: &Client,
     evt: &StoredPreDepositEvt,
     deposit_data: &DepositData,
-    _key_store: &StoredKeyStore,
+    _keystore: &StoredKeyStore,
 ) -> Result<i64> {
     let data = serde_json::to_value(deposit_data)?;
     let pre_deposit_event_pk = evt.pk;

@@ -8,8 +8,8 @@ use crate::storage::models::{
 use crate::utils::{generate_deposit_calldata, BatchDepositCallData};
 use crate::{
     storage::models::{
-        insert_deposit_data, query_unflattened_events, query_unused_key_store,
-        update_events_to_flattened, update_key_store_fk, StoredKeyStore, StoredPreDepositEvt,
+        insert_deposit_data, query_unflattened_events, query_unused_keystore,
+        update_events_to_flattened, update_keystore_fk, StoredKeyStore, StoredPreDepositEvt,
     },
     utils::generate_deposit_data,
 };
@@ -70,7 +70,7 @@ impl ProcessorService {
 
     /// This method process `PreDepositLog`
     /// 1.flattern the `n` to `DepositData`
-    /// 2.update bls_key_store
+    /// 2.update bls_keystore
     async fn flattern(&self) -> Result<()> {
         let mut conn = self.pool.get().await?;
         let tx = conn.transaction().await?;
@@ -99,7 +99,7 @@ impl ProcessorService {
             // 3. Generate and insert into deposit_data table
             for key in keys {
                 let key_pair = key
-                    .key_store
+                    .keystore
                     .decrypt_keypair(self.password.as_bytes())
                     .map_err(|_| anyhow::anyhow!("use password decrypt"))?;
                 let deposit_data = generate_deposit_data(
@@ -114,7 +114,7 @@ impl ProcessorService {
                     .await
                     .context("insert deposit data")?;
                 // 3. Update keystore foreign key
-                self.update_key_store_fk(client, &key, deposit_data_pk)
+                self.update_keystore_fk(client, &key, deposit_data_pk)
                     .await
                     .context("update keystore fk")?;
             }
@@ -212,7 +212,7 @@ impl ProcessorService {
     }
 
     async fn select_unused_keystore(&self, client: &Client, n: u64) -> Result<Vec<StoredKeyStore>> {
-        let kys = query_unused_key_store(client, n as i64).await?;
+        let kys = query_unused_keystore(client, n as i64).await?;
         ensure!(
             kys.len() == n as usize,
             "Not enough bls keystore, expect: {}, found: {}.",
@@ -251,13 +251,13 @@ impl ProcessorService {
         Ok(batch)
     }
 
-    async fn update_key_store_fk(
+    async fn update_keystore_fk(
         &self,
         client: &Client,
         ks: &StoredKeyStore,
         fk: i64,
     ) -> Result<()> {
-        let result = update_key_store_fk(client, ks, fk).await?;
+        let result = update_keystore_fk(client, ks, fk).await?;
         ensure!(result == 1, "update bls_keystore fail");
         Ok(())
     }
