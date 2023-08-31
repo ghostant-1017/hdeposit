@@ -1,7 +1,6 @@
 CREATE DATABASE hellman;
 
 create table pre_deposit_events (
-    -- TODO: add primary key
     pk BIGSERIAL PRIMARY KEY,
     flattened BOOLEAN DEFAULT FALSE, 
 
@@ -14,6 +13,7 @@ create table pre_deposit_events (
 
 create table bls_keystore (
     pk BIGSERIAL PRIMARY KEY,
+    -- TODO: Add unique index
     keystore JSON,
     deposit_data_pk BIGINT NULL
 );
@@ -28,6 +28,7 @@ CREATE table deposit_data (
 
 CREATE table eth_transactions (
     pk BIGSERIAL PRIMARY KEY,
+    -- Add UNIQUE INDEX
     tx_hash VARCHAR,
     tx JSON,
     signature VARCHAR,
