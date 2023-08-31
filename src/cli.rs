@@ -8,8 +8,8 @@ use crate::{
 };
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
-use ethers::prelude::SignerMiddleware;
 use ethers::types::Address;
+use ethers::{prelude::SignerMiddleware};
 use lighthouse_types::{ChainSpec, Config, MainnetEthSpec};
 use std::{str::FromStr, sync::Arc};
 use tracing::*;
@@ -52,13 +52,14 @@ impl Cli {
         info!("Loading contract owner secret key from env[CONTRACT_OWNER_KEY]...");
         let wallet = inital_wallet_from_env().context("init local wallet fail")?;
         info!("Initializing db connection pool...");
-        let pool = initial_pg_pool(self.dsn).await?;
+        let pool: bb8_postgres::bb8::Pool<
+            bb8_postgres::PostgresConnectionManager<bb8_postgres::tokio_postgres::NoTls>,
+        > = initial_pg_pool(self.dsn).await?;
         let contract_addr =
             Address::from_str(&self.contract).context("parse contract address error")?;
         let provider = ethers::providers::Provider::try_from(self.eth1_endpoint.as_str())?;
-        let client = Arc::new(SignerMiddleware::new(provider, wallet));
+        let client = Arc::new(SignerMiddleware::new_with_provider_chain(provider, wallet).await?);
         let contract = Vault::new(contract_addr, client);
-
         let evt_service = EventService::new(self.eth2_endpoint, contract.clone(), pool.clone())?;
         let spec = match self.chain_id {
             0 => ChainSpec::mainnet(),

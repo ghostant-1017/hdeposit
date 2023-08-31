@@ -28,10 +28,12 @@ CREATE table deposit_data (
 
 CREATE table eth_transactions (
     pk BIGSERIAL PRIMARY KEY,
-    tx_hash VARCHAR
-)
+    tx_hash VARCHAR,
+    tx JSON,
+    signature VARCHAR
+);
 
 drop table pre_deposit_events;
 drop table bls_keystore;
-
 drop table deposit_data;
+drop Table eth_transactions;

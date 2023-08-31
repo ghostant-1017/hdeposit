@@ -79,14 +79,14 @@ impl Display for BatchDepositCallData {
     }
 }
 
-pub fn generate_deposit_calldata(batch: Vec<DepositData>) -> BatchDepositCallData {
+pub fn generate_deposit_calldata(batch: &Vec<DepositData>) -> BatchDepositCallData {
     let mut hm: HashMap<Hash256, Vec<DepositData>> = HashMap::new();
     // Group by withdrawl_credentials
     for deposit_data in batch {
         let wc = deposit_data.withdrawal_credentials;
         hm.entry(wc)
             .and_modify(|v| v.push(deposit_data.clone()))
-            .or_insert(vec![deposit_data]);
+            .or_insert(vec![deposit_data.clone()]);
     }
 
     let mut pubkeys = BytesMut::new();

@@ -54,3 +54,21 @@ pub async fn query_pending_deposit_data(client: &Client) -> Result<Vec<StoredDep
     }
     Ok(result)
 }
+
+pub async fn update_batch_deposit_data(
+    client: &Client,
+    batch: &Vec<StoredDepositData>,
+    eth_tx_pk: i64,
+) -> Result<u64> {
+    let mut success = 0;
+    for deposit_data in batch {
+        let row = client
+            .execute(
+                "update deposit_data set eth_tx_pk = $1 where pk = $2;",
+                &[&eth_tx_pk, &deposit_data.pk],
+            )
+            .await?;
+        success += row;
+    }
+    Ok(success)
+}

@@ -1,8 +1,10 @@
-
 use std::time::Duration;
 
 use crate::storage::db::PgPool;
-use crate::storage::models::{query_pending_deposit_data, StoredDepositData};
+use crate::storage::models::{
+    insert_eth_transaction, query_pending_deposit_data, update_batch_deposit_data,
+    StoredDepositData,
+};
 use crate::utils::{generate_deposit_calldata, BatchDepositCallData};
 use crate::{
     storage::models::{
@@ -14,10 +16,11 @@ use crate::{
 use anyhow::{ensure, Context, Result};
 use bb8_postgres::tokio_postgres::Client;
 
-use ethers::providers::Middleware;
+use ethers::providers::{Middleware};
 
-
-use ethers::types::BlockId;
+use ethers::types::transaction::eip2718::TypedTransaction;
+use ethers::types::{Bytes as EBytes, Signature};
+use lighthouse_bls::Hash256;
 // use ethers::types::Bytes;
 use lighthouse_types::{ChainSpec, DepositData};
 use tokio::time::sleep;
@@ -57,10 +60,11 @@ impl ProcessorService {
 
     async fn do_update(&self) -> Result<()> {
         info!("[Processor] do update...");
+        // 1.Flattern `PreDepositFilter` to `DepositData`
         self.flattern().await?;
-        // Preprare calldata to call contract
+        // 2.Preprare calldata and generate raw_tx
         self.process().await?;
-        // self.contract.deposit(calldata.0, calldata.1, calldata.2, calldata.3, calldata.4).send()
+
         Ok(())
     }
 
@@ -122,20 +126,48 @@ impl ProcessorService {
     }
 
     async fn process(&self) -> Result<()> {
-        let conn = self.pool.get().await?;
-        let batch_stored: Vec<StoredDepositData> = self.select_pending_deposit_data(&conn).await?;
+        let mut conn = self.pool.get().await?;
+        let db_tx = conn.transaction().await?;
+        // 1.Check if the deposit_data is enough
+        let batch_stored = match self.prepare_batch_deposit_data(db_tx.client()).await? {
+            Some(batch) => batch,
+            None => return Ok(()),
+        };
+
         let batch_data: Vec<DepositData> = batch_stored
-            .into_iter()
-            .map(|stored| stored.deposit_data)
+            .iter()
+            .map(|stored| stored.deposit_data.clone())
             .collect();
-        if !batch_data.is_empty() {
-            let calldata = generate_deposit_calldata(batch_data);
-            self.call_deposit(calldata).await?;
-        }
+        // 2. Generate deposit_calldata
+        let calldata = generate_deposit_calldata(&batch_data);
+        // 3. Insert the transaction and signature ralated to eth_tx
+        let (tx, signature) = self.prepare_tx_and_signature(calldata).await?;
+        let eth_tx_pk = self
+            .insert_eth_transaction(db_tx.client(), tx, signature)
+            .await?;
+        self.update_deposit_data_with_eth_tx_pk(db_tx.client(), batch_stored, eth_tx_pk)
+            .await?;
+
+        db_tx.commit().await?;
         Ok(())
     }
 
-    async fn call_deposit(&self, calldata: BatchDepositCallData) -> Result<()> {
+    async fn prepare_batch_deposit_data(
+        &self,
+        client: &Client,
+    ) -> Result<Option<Vec<StoredDepositData>>> {
+        let batch_stored = self.select_pending_deposit_data(client).await?;
+        // TODO: check the number
+        if batch_stored.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(batch_stored))
+    }
+
+    async fn prepare_tx_and_signature(
+        &self,
+        calldata: BatchDepositCallData,
+    ) -> Result<(TypedTransaction, Signature)> {
         info!(
             "[Processor]Prepare to `deposit` with calldata: {}",
             calldata
@@ -144,16 +176,30 @@ impl ProcessorService {
             .contract
             .deposit(calldata.0, calldata.1, calldata.2, calldata.3, calldata.4);
         let mut tx = contract_call.tx.clone();
-        self.contract
-            .client()
+        let eth_client = self.contract.client();
+        eth_client
             .fill_transaction(&mut tx, None)
             .await
             .context("fill transaction")?;
-        let from = self.contract.client().address();
-        let signature = self.contract.client().sign_transaction(&tx, from).await.context("sign transaction")?;
-        let tx_hash = tx.hash(&signature);
-        info!("[Processor]Prepare to send transaction: {}", tx_hash);
-        Ok(())
+
+        let from = eth_client.address();
+        let signature = eth_client
+            .sign_transaction(&tx, from)
+            .await
+            .context("sign transaction")?;
+        // let tx_hash = tx.hash(&signature);
+        // info!("[Processor]Prepare to send transaction: {}", tx_hash.to_string());
+        // let raw_tx = tx.rlp_signed(&signature);
+        Ok((tx, signature))
+        // Send transaction after update
+        // let pending_tx = self.provider.send_raw_transaction(raw_tx).await.context("send raw transaction")?;
+        // ensure!(pending_tx.tx_hash() == tx_hash, "Transaction hash didn't match!");
+    }
+
+    async fn send_raw_transaction(&self, raw_tx: EBytes) -> Result<Hash256> {
+        let eth_client = self.contract.client();
+        let pending_tx = eth_client.send_raw_transaction(raw_tx).await?;
+        Ok(pending_tx.to_owned())
     }
 }
 
@@ -174,6 +220,16 @@ impl ProcessorService {
             kys.len()
         );
         Ok(kys)
+    }
+
+    async fn insert_eth_transaction(
+        &self,
+        client: &Client,
+        tx: TypedTransaction,
+        signature: Signature,
+    ) -> Result<i64> {
+        let eth_transaction_pk = insert_eth_transaction(client, tx, signature).await?;
+        Ok(eth_transaction_pk)
     }
 
     async fn insert_deposit_data(
@@ -215,11 +271,26 @@ impl ProcessorService {
         ensure!(result == 1, "update pre_deposit_events to flattened error");
         Ok(())
     }
+
+    async fn update_deposit_data_with_eth_tx_pk(
+        &self,
+        client: &Client,
+        batch: Vec<StoredDepositData>,
+        eth_tx_pk: i64,
+    ) -> Result<()> {
+        let result = update_batch_deposit_data(client, &batch, eth_tx_pk).await?;
+        ensure!(
+            result == batch.len() as u64,
+            "Critical bug when set eth_tx_pk, expect: {}, found: {}",
+            batch.len(),
+            result
+        );
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    
 
     #[test]
     fn test_tx_hash() {
