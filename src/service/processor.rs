@@ -171,8 +171,10 @@ impl ProcessorService {
         };
         info!("Found pending transaction: {}", eth_tx.tx_hash.to_string());
         info!("Prepare send raw data: {}", eth_tx.raw_tx());
-        let pending_tx = self.send_raw_transaction(eth_tx.raw_tx()).await?;
-        ensure!(pending_tx == eth_tx.tx_hash, "transaction hash not match");
+        if let Err(err) = self.send_raw_transaction(eth_tx.raw_tx()).await {
+            warn!("[Processor]Send raw transaction: {}", err);
+        }
+        // ensure!(pending_tx == eth_tx.tx_hash, "transaction hash not match");
         self.wait_for_finality(eth_tx.tx_hash).await?;
         Ok(())
     }

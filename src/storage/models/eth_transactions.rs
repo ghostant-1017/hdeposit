@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use bb8_postgres::tokio_postgres::{Client, Row};
 use ethers::types::{transaction::eip2718::TypedTransaction, Signature, Bytes as EBytes};
 use lighthouse_types::Hash256;
@@ -39,11 +39,12 @@ pub async fn insert_eth_transaction(
     signature: Signature,
 ) -> Result<i64> {
     let tx_hash = tx.hash(&signature);
-    let tx = serde_json::to_value(tx)?;
+    let mut serde_tx = serde_json::to_value(&tx)?;
+    serde_tx["chainId"] = tx.chain_id().ok_or(anyhow!("Missing chaiId"))?.as_u64().into();
     let result = client
         .query_one(
             "insert into eth_transactions (tx_hash, tx, signature) values ($1, $2, $3) returning pk;",
-            &[&serde_json::to_string(&tx_hash)?, &tx, &serde_json::to_string(&signature)?],
+            &[&serde_json::to_string(&tx_hash)?, &serde_tx, &serde_json::to_string(&signature)?],
         )
         .await?;
     let pk = result.try_get("pk")?;
