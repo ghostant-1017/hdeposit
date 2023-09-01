@@ -40,7 +40,7 @@ pub async fn insert_eth_transaction(
 ) -> Result<i64> {
     let tx_hash = tx.hash(&signature);
     let mut serde_tx = serde_json::to_value(&tx)?;
-    serde_tx["chainId"] = tx.chain_id().ok_or(anyhow!("Missing chaiId"))?.as_u64().into();
+    serde_tx["chainId"] = serde_json::to_value(&tx.chain_id().ok_or(anyhow!("Missing chaiId"))?)?;
     let result = client
         .query_one(
             "insert into eth_transactions (tx_hash, tx, signature) values ($1, $2, $3) returning pk;",
