@@ -107,6 +107,7 @@ impl EventService {
             .pre_deposit_filter()
             .from_block(from)
             .to_block(to)
+            .address(self.contract.address().into())
             .query_with_meta()
             .await?;
         Ok(logs)
