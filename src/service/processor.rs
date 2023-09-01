@@ -199,8 +199,9 @@ impl ProcessorService {
         client: &Client,
     ) -> Result<Option<Vec<StoredDepositData>>> {
         let batch_stored = self.select_pending_deposit_data(client).await?;
-        // TODO: check the number
-        if batch_stored.is_empty() {
+        // TODO: Check the number
+        if batch_stored.len() < 10 {
+            info!("[Processor]Prepare pending batch not met the target, num: {}", batch_stored.len());
             return Ok(None);
         }
         Ok(Some(batch_stored))
