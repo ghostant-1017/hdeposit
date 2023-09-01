@@ -60,3 +60,8 @@ pub async fn select_pending_eth_transactions(client: &Client) -> Result<Vec<Stor
     }
     Ok(result)
 }
+
+pub async fn update_eth_tx_to_finality(client: &Client, tx_hash: Hash256) -> Result<u64> {
+    let result = client.execute("update eth_transactions set finality = true where tx_hash = $1", &[&serde_json::to_string(&tx_hash)?]).await?;
+    Ok(result)
+}

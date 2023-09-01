@@ -4,7 +4,7 @@ use crate::eth2::get_current_finality_block_number;
 use crate::storage::db::PgPool;
 use crate::storage::models::{
     insert_eth_transaction, query_pending_deposit_data, update_batch_deposit_data,
-    StoredDepositData, StoredEthTransaction, select_pending_eth_transactions,
+    StoredDepositData, StoredEthTransaction, select_pending_eth_transactions, update_eth_tx_to_finality,
 };
 use crate::utils::{generate_deposit_calldata, BatchDepositCallData};
 use crate::{
@@ -169,13 +169,14 @@ impl ProcessorService {
             Some(eth_tx) => eth_tx,
             None => return Ok(())
         };
-        info!("Found pending transaction: {}", eth_tx.tx_hash.to_string());
-        info!("Prepare send raw data: {}", eth_tx.raw_tx());
+        drop(conn);
+        info!("[Processor]Found pending transaction: [{}]", eth_tx.tx_hash);
         if let Err(err) = self.send_raw_transaction(eth_tx.raw_tx()).await {
             warn!("[Processor]Send raw transaction: {}", err);
         }
         // ensure!(pending_tx == eth_tx.tx_hash, "transaction hash not match");
         self.wait_for_finality(eth_tx.tx_hash).await?;
+        info!("[Processor]Transaction: [{}] has updated to finality", eth_tx.tx_hash);
         Ok(())
     }
 
@@ -187,8 +188,11 @@ impl ProcessorService {
             let receipt = pending_tx.await?.ok_or(anyhow!("Transaction not found"))?;
             let finality = get_current_finality_block_number(&self.eth2_endpoint).await?;
             if receipt.block_number.ok_or(anyhow!("block number not found"))? <= finality.into() {
+                let conn = self.pool.get().await?;
+                self.update_eth_tx_to_finality(&conn, tx_hash).await?;
                 return Ok(())
             }
+            sleep(Duration::from_secs(12)).await;
         }
     } 
 
@@ -340,6 +344,12 @@ impl ProcessorService {
         );
         Ok(())
     }
+
+    async fn update_eth_tx_to_finality(&self, client: &Client, tx_hash: Hash256) -> Result<()> {
+        update_eth_tx_to_finality(client, tx_hash).await?;
+        Ok(())
+    }
+
 }
 
 #[cfg(test)]
