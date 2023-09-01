@@ -46,7 +46,7 @@ pub async fn insert_deposit_data(
 
 pub async fn query_pending_deposit_data(client: &Client) -> Result<Vec<StoredDepositData>> {
     let rows = client
-        .query("select * from deposit_data order by pk ASC;", &[])
+        .query("select * from deposit_data where eth_tx_pk is null order by pk ASC;", &[])
         .await?;
     let mut result = vec![];
     for row in rows {
