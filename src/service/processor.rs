@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::time::Duration;
 
 use crate::eth2::get_current_finality_block_number;
@@ -17,13 +18,14 @@ use crate::{
 use anyhow::{ensure, Context, Result, anyhow};
 use bb8_postgres::tokio_postgres::Client;
 
+use eth2::BeaconNodeHttpClient;
 use ethers::providers::{Middleware, PendingTransaction};
 
 use ethers::types::transaction::eip2718::TypedTransaction;
 use ethers::types::{Bytes as EBytes, Signature};
 use lighthouse_bls::Hash256;
 // use ethers::types::Bytes;
-use lighthouse_types::{ChainSpec, DepositData};
+use lighthouse_types::{ChainSpec, DepositData, EthSpec};
 use tokio::time::sleep;
 use tracing::*;
 use url::Url;
@@ -31,22 +33,24 @@ use url::Url;
 use super::VaultContract;
 
 const DEPOSIT_AMOUNT: u64 = 32_000_000_000;
-pub struct ProcessorService {
-    eth2_endpoint: Url,
+pub struct ProcessorService<T: EthSpec> {
+    eth2_client: BeaconNodeHttpClient,
     pool: PgPool,
     password: String,
     spec: ChainSpec,
     contract: VaultContract,
+    _p: PhantomData<T>
 }
 
-impl ProcessorService {
-    pub fn new(eth2_endpoint: Url, pool: PgPool, password: &str, spec: ChainSpec, contract: VaultContract) -> Self {
+impl<T: EthSpec> ProcessorService<T> {
+    pub fn new(eth2_client: BeaconNodeHttpClient, pool: PgPool, password: &str, spec: ChainSpec, contract: VaultContract) -> Self {
         Self {
-            eth2_endpoint,
+            eth2_client,
             pool,
             password: password.to_owned(),
             spec,
             contract,
+            _p: Default::default()
         }
     }
 
@@ -184,7 +188,7 @@ impl ProcessorService {
         loop {
             let pending_tx = PendingTransaction::new(tx_hash, provider);
             let receipt = pending_tx.await?.ok_or(anyhow!("Transaction not found"))?;
-            let finality = get_current_finality_block_number(&self.eth2_endpoint).await?;
+            let finality = get_current_finality_block_number::<T>(&self.eth2_client).await?;
             if receipt.block_number.ok_or(anyhow!("block number not found"))? <= finality.into() {
                 let conn = self.pool.get().await?;
                 self.update_eth_tx_to_finality(&conn, tx_hash).await?;
@@ -241,7 +245,7 @@ impl ProcessorService {
 }
 
 // DB trait
-impl ProcessorService {
+impl<T: EthSpec> ProcessorService<T> {
     // Asc by block height
     async fn select_pending_evts(&self, client: &Client) -> Result<Vec<StoredPreDepositEvt>> {
         let evts = query_unflattened_events(client).await?;

@@ -1,31 +1,35 @@
+use std::marker::PhantomData;
 use std::time::Duration;
 
 use crate::eth2::get_current_finality_block_number;
 use crate::storage::db::PgPool;
 use crate::storage::models::{insert_batch_logs, query_latest_block_number};
 use crate::vault::PreDepositFilter;
-use anyhow::{ensure, Context, Result};
+use anyhow::{ensure, Context, Result, anyhow};
+use eth2::BeaconNodeHttpClient;
 use ethers::prelude::LogMeta;
 
+use lighthouse_types::EthSpec;
 use tokio::time::sleep;
 use tracing::*;
-use url::Url;
 
 use super::VaultContract;
 
 #[derive(Clone)]
-pub struct EventService {
+pub struct EventService<T: EthSpec> {
     contract: VaultContract,
     pool: PgPool,
-    eth2_base: Url,
+    eth2_client: BeaconNodeHttpClient,
+    _p: PhantomData<T>
 }
 
-impl EventService {
-    pub fn new(eth2_base: Url, contract: VaultContract, pool: PgPool) -> Result<Self> {
+impl<T: EthSpec> EventService<T> {
+    pub fn new(eth2_client: BeaconNodeHttpClient, contract: VaultContract, pool: PgPool) -> Result<Self> {
         Ok(Self {
             contract,
             pool,
-            eth2_base,
+            eth2_client,
+            _p: Default::default(),
         })
     }
 
@@ -79,7 +83,7 @@ impl EventService {
 }
 
 // DB trait
-impl EventService {
+impl<T: EthSpec> EventService<T> {
     async fn fetch_last_synced(&self) -> Result<Option<u64>> {
         let conn = self.pool.get().await?;
         let height = query_latest_block_number(&conn).await?;
@@ -96,7 +100,7 @@ impl EventService {
 }
 
 // Eth1
-impl EventService {
+impl<T: EthSpec> EventService<T> {
     pub async fn query_pre_deposit_logs(
         &self,
         from: u64,
@@ -115,8 +119,10 @@ impl EventService {
 }
 
 // Eth2
-impl EventService {
+impl<T: EthSpec> EventService<T> {
     async fn get_current_finality_block_number(&self) -> Result<u64> {
-        get_current_finality_block_number(&self.eth2_base).await
+        get_current_finality_block_number::<T>(&self.eth2_client)
+        .await
+        .map_err(|err| anyhow!("{err}"))
     }
 }

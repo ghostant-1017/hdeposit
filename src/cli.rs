@@ -4,13 +4,13 @@ use crate::{
     service::{EventService, ProcessorService},
     storage::db::initial_pg_pool,
     vault::Vault,
-    wallet::inital_wallet_from_env,
+    wallet::inital_wallet_from_env, eth2::new_eth2_client,
 };
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use ethers::types::Address;
 use ethers::{prelude::SignerMiddleware};
-use lighthouse_types::{ChainSpec, Config, MainnetEthSpec};
+use lighthouse_types::{ChainSpec, Config, MainnetEthSpec, EthSpec};
 use std::{str::FromStr, sync::Arc};
 use tracing::*;
 use url::Url;
@@ -60,7 +60,8 @@ impl Cli {
         let provider = ethers::providers::Provider::try_from(self.eth1_endpoint.as_str())?;
         let client = Arc::new(SignerMiddleware::new_with_provider_chain(provider, wallet).await?);
         let contract = Vault::new(contract_addr, client);
-        let evt_service = EventService::new(self.eth2_endpoint.clone(), contract.clone(), pool.clone())?;
+        let eth2_client = new_eth2_client(self.eth2_endpoint.as_str())?;
+
         let spec = match self.chain_id {
             0 => ChainSpec::mainnet(),
             _ => {
@@ -68,13 +69,14 @@ impl Cli {
                 ChainSpec::from_config::<MainnetEthSpec>(&config).ok_or(anyhow!("from config"))?
             }
         };
-        let proc_service = ProcessorService::new(self.eth2_endpoint, pool, &self.password, spec, contract);
+        let evt_service = EventService::<MainnetEthSpec>::new(eth2_client.clone(), contract.clone(), pool.clone())?;
+        let proc_service = ProcessorService::new(eth2_client.clone(), pool, &self.password, spec, contract);
         run(self.start, evt_service, proc_service).await?;
         Ok(())
     }
 }
 
-async fn run(start: u64, evt_service: EventService, proc_service: ProcessorService) -> Result<()> {
+async fn run<T: EthSpec>(start: u64, evt_service: EventService<T>, proc_service: ProcessorService<T>) -> Result<()> {
     proc_service.start_update_service()?;
     evt_service.start_update_service(start).await?;
     Ok(())
