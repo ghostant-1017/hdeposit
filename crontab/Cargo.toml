@@ -1,0 +1,32 @@
+[package]
+name = "crontab"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1"
+k256 = "0.13.1"
+clap = {version = "4", features = ["derive"]}
+tokio = {version = "1.32.0", features = ["full"]}
+tracing = "0.1"
+tracing-subscriber = {version = "0.3", features = ["env-filter"]}
+bb8-postgres = {version = "0.8", features = ["with-serde_json-1"]}
+url = "2"
+reqwest = "0.11"
+serde = "1"
+serde_json = "1"
+ethers = {workspace = true}
+lighthouse-types = { workspace = true}
+lighthouse-bls = { workspace = true}
+eth2_keystore = { workspace = true}
+eth2 = {workspace = true }
+
+tree_hash = "0.5.0"
+bytes = "1.4.0"
+serde_yaml = "0.9.25"
+
+contract = {path = "../contract"}
+storage = {path = "../storage"}
+

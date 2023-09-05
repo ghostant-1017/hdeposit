@@ -53,3 +53,19 @@ pub async fn update_keystore_fk(
         .await?;
     Ok(result)
 }
+
+
+pub async fn query_used_keystore(client: &Client) -> Result<Vec<StoredKeyStore>> {
+    let rows = client
+        .query(
+            "select * from bls_keystore where deposit_data_pk is not null;",
+            &[],
+        )
+        .await?;
+    let mut result = vec![];
+    for row in rows {
+        let ks = StoredKeyStore::try_from(row)?;
+        result.push(ks);
+    }
+    Ok(result)
+}

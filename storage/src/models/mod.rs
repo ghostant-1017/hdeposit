@@ -6,6 +6,8 @@ mod deposit_data;
 pub use deposit_data::*;
 mod eth_transactions;
 pub use eth_transactions::*;
+mod vadalitors;
+pub use vadalitors::*;
 
-use crate::vault::PreDepositFilter;
+use contract::vault::PreDepositFilter;
 use anyhow::{anyhow, Result};

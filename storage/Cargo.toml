@@ -1,0 +1,20 @@
+[package]
+name = "storage"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bb8-postgres = {version = "0.8", features = ["with-serde_json-1"]}
+anyhow = "1"
+serde_json = "1"
+
+
+ethers = {workspace = true}
+lighthouse-types = { workspace = true}
+eth2 = {workspace = true }
+eth2_keystore = { workspace = true }
+
+[dependencies.contract]
+path = "../contract"

@@ -31,12 +31,3 @@ pub async fn get_current_finality_block_number<T: EthSpec>(
     let block_number = payload.execution_payload_ref().block_number();
     Ok(block_number)
 }
-
-pub async fn get_validators(client: &BeaconNodeHttpClient) -> Result<Vec<ValidatorData>> {
-    let validators = client
-        .get_beacon_states_validators(StateId::Finalized, None, None)
-        .await
-        .map_err(|err| anyhow!("{err}"))?
-        .unwrap();
-    Ok(validators.data)
-}

@@ -964,6 +964,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
+name = "contract"
+version = "0.1.0"
+dependencies = [
+ "ethers",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1004,6 +1013,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b540bd8bc810d3885c6ea91e2018302f68baba2129ab3e88f32389ee9370880d"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "crontab"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bb8-postgres",
+ "bls",
+ "bytes",
+ "clap 4.4.0",
+ "contract",
+ "eth2",
+ "eth2_keystore",
+ "ethers",
+ "k256",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.9.25",
+ "storage",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "tree_hash",
+ "types",
+ "url",
 ]
 
 [[package]]
@@ -2693,31 +2729,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "312f66718a2d7789ffef4f4b7b213138ed9f1eb3aa1d0d82fc99f88fb3ffd26f"
 dependencies = [
  "hashbrown 0.14.0",
-]
-
-[[package]]
-name = "hdeposit"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bb8-postgres",
- "bls",
- "bytes",
- "clap 4.4.0",
- "eth2",
- "eth2_keystore",
- "ethers",
- "k256",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yaml 0.9.25",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "tree_hash",
- "types",
- "url",
 ]
 
 [[package]]
@@ -6444,6 +6455,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
+name = "storage"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bb8-postgres",
+ "contract",
+ "eth2",
+ "eth2_keystore",
+ "ethers",
+ "serde_json",
+ "types",
+]
+
+[[package]]
 name = "store"
 version = "0.2.0"
 source = "git+ssh://git@github.com/sigp/lighthouse.git?branch=stable#2841f60686d642fcc0785c884d43e34e47a800dc"
@@ -7562,6 +7587,16 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+]
+
+[[package]]
+name = "web"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bb8-postgres",
+ "eth2",
+ "storage",
 ]
 
 [[package]]
