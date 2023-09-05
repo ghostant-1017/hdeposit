@@ -5,7 +5,7 @@ use crate::eth2::get_current_finality_block_number;
 use crate::storage::db::PgPool;
 use crate::storage::models::{insert_batch_logs, query_latest_block_number};
 use crate::vault::PreDepositFilter;
-use anyhow::{ensure, Context, Result, anyhow};
+use anyhow::{anyhow, ensure, Context, Result};
 use eth2::BeaconNodeHttpClient;
 use ethers::prelude::LogMeta;
 
@@ -20,11 +20,15 @@ pub struct EventService<T: EthSpec> {
     contract: VaultContract,
     pool: PgPool,
     eth2_client: BeaconNodeHttpClient,
-    _p: PhantomData<T>
+    _p: PhantomData<T>,
 }
 
 impl<T: EthSpec> EventService<T> {
-    pub fn new(eth2_client: BeaconNodeHttpClient, contract: VaultContract, pool: PgPool) -> Result<Self> {
+    pub fn new(
+        eth2_client: BeaconNodeHttpClient,
+        contract: VaultContract,
+        pool: PgPool,
+    ) -> Result<Self> {
         Ok(Self {
             contract,
             pool,
@@ -122,7 +126,7 @@ impl<T: EthSpec> EventService<T> {
 impl<T: EthSpec> EventService<T> {
     async fn get_current_finality_block_number(&self) -> Result<u64> {
         get_current_finality_block_number::<T>(&self.eth2_client)
-        .await
-        .map_err(|err| anyhow!("{err}"))
+            .await
+            .map_err(|err| anyhow!("{err}"))
     }
 }

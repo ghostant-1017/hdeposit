@@ -118,7 +118,6 @@ pub fn generate_deposit_calldata(batch: &Vec<DepositData>) -> BatchDepositCallDa
 
 #[cfg(test)]
 mod tests {
-    use super::rust_file_generation;
 
     #[test]
     fn test_gen_abi() {

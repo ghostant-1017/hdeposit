@@ -1,6 +1,6 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use bb8_postgres::tokio_postgres::{Client, Row};
-use ethers::types::{transaction::eip2718::TypedTransaction, Signature, Bytes as EBytes};
+use ethers::types::{transaction::eip2718::TypedTransaction, Bytes as EBytes, Signature};
 use lighthouse_types::Hash256;
 
 pub struct StoredEthTransaction {
@@ -8,7 +8,7 @@ pub struct StoredEthTransaction {
     pub tx: TypedTransaction,
     pub tx_hash: Hash256,
     pub signature: Signature,
-    pub finality: bool
+    pub finality: bool,
 }
 
 impl TryFrom<Row> for StoredEthTransaction {
@@ -23,7 +23,13 @@ impl TryFrom<Row> for StoredEthTransaction {
         let signature: String = row.try_get("signature")?;
         let signature = serde_json::from_str(&signature)?;
         let finality = row.try_get("finality")?;
-        Ok(StoredEthTransaction { pk, tx, tx_hash, signature, finality })
+        Ok(StoredEthTransaction {
+            pk,
+            tx,
+            tx_hash,
+            signature,
+            finality,
+        })
     }
 }
 
@@ -40,7 +46,7 @@ pub async fn insert_eth_transaction(
 ) -> Result<i64> {
     let tx_hash = tx.hash(&signature);
     let mut serde_tx = serde_json::to_value(&tx)?;
-    serde_tx["chainId"] = serde_json::to_value(&tx.chain_id().ok_or(anyhow!("Missing chaiId"))?)?;
+    serde_tx["chainId"] = serde_json::to_value(tx.chain_id().ok_or(anyhow!("Missing chaiId"))?)?;
     let result = client
         .query_one(
             "insert into eth_transactions (tx_hash, tx, signature) values ($1, $2, $3) returning pk;",
@@ -52,7 +58,12 @@ pub async fn insert_eth_transaction(
 }
 
 pub async fn select_pending_eth_transactions(client: &Client) -> Result<Vec<StoredEthTransaction>> {
-    let rows = client.query("select * from eth_transactions where finality = false;", &[]).await?;
+    let rows = client
+        .query(
+            "select * from eth_transactions where finality = false;",
+            &[],
+        )
+        .await?;
     let mut result = vec![];
     for row in rows {
         let tx = row.try_into()?;
@@ -62,6 +73,11 @@ pub async fn select_pending_eth_transactions(client: &Client) -> Result<Vec<Stor
 }
 
 pub async fn update_eth_tx_to_finality(client: &Client, tx_hash: Hash256) -> Result<u64> {
-    let result = client.execute("update eth_transactions set finality = true where tx_hash = $1", &[&serde_json::to_string(&tx_hash)?]).await?;
+    let result = client
+        .execute(
+            "update eth_transactions set finality = true where tx_hash = $1",
+            &[&serde_json::to_string(&tx_hash)?],
+        )
+        .await?;
     Ok(result)
 }

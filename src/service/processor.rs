@@ -4,8 +4,8 @@ use std::time::Duration;
 use crate::eth2::get_current_finality_block_number;
 use crate::storage::db::PgPool;
 use crate::storage::models::{
-    insert_eth_transaction, query_pending_deposit_data, update_batch_deposit_data,
-    StoredDepositData, StoredEthTransaction, select_pending_eth_transactions, update_eth_tx_to_finality,
+    insert_eth_transaction, query_pending_deposit_data, select_pending_eth_transactions,
+    update_batch_deposit_data, update_eth_tx_to_finality, StoredDepositData, StoredEthTransaction,
 };
 use crate::utils::{generate_deposit_calldata, BatchDepositCallData};
 use crate::{
@@ -15,7 +15,7 @@ use crate::{
     },
     utils::generate_deposit_data,
 };
-use anyhow::{ensure, Context, Result, anyhow};
+use anyhow::{anyhow, ensure, Context, Result};
 use bb8_postgres::tokio_postgres::Client;
 
 use eth2::BeaconNodeHttpClient;
@@ -28,7 +28,6 @@ use lighthouse_bls::Hash256;
 use lighthouse_types::{ChainSpec, DepositData, EthSpec};
 use tokio::time::sleep;
 use tracing::*;
-use url::Url;
 
 use super::VaultContract;
 
@@ -39,18 +38,24 @@ pub struct ProcessorService<T: EthSpec> {
     password: String,
     spec: ChainSpec,
     contract: VaultContract,
-    _p: PhantomData<T>
+    _p: PhantomData<T>,
 }
 
 impl<T: EthSpec> ProcessorService<T> {
-    pub fn new(eth2_client: BeaconNodeHttpClient, pool: PgPool, password: &str, spec: ChainSpec, contract: VaultContract) -> Self {
+    pub fn new(
+        eth2_client: BeaconNodeHttpClient,
+        pool: PgPool,
+        password: &str,
+        spec: ChainSpec,
+        contract: VaultContract,
+    ) -> Self {
         Self {
             eth2_client,
             pool,
             password: password.to_owned(),
             spec,
             contract,
-            _p: Default::default()
+            _p: Default::default(),
         }
     }
 
@@ -58,7 +63,7 @@ impl<T: EthSpec> ProcessorService<T> {
         tokio::spawn(async move {
             loop {
                 if let Err(err) = self.confirm_pending_tx().await {
-                    error!("[Processor]Confirm pending tx error: {}" ,err);
+                    error!("[Processor]Confirm pending tx error: {}", err);
                     sleep(Duration::from_secs(12)).await;
                     continue;
                 }
@@ -169,7 +174,7 @@ impl<T: EthSpec> ProcessorService<T> {
         let conn = self.pool.get().await?;
         let eth_tx: StoredEthTransaction = match self.select_eth_transactions(&conn).await? {
             Some(eth_tx) => eth_tx,
-            None => return Ok(())
+            None => return Ok(()),
         };
         drop(conn);
         info!("[Processor]Found pending transaction: [{}]", eth_tx.tx_hash);
@@ -178,7 +183,10 @@ impl<T: EthSpec> ProcessorService<T> {
         }
         // ensure!(pending_tx == eth_tx.tx_hash, "transaction hash not match");
         self.wait_for_finality(eth_tx.tx_hash).await?;
-        info!("[Processor]Transaction: [{}] has updated to finality", eth_tx.tx_hash);
+        info!(
+            "[Processor]Transaction: [{}] has updated to finality",
+            eth_tx.tx_hash
+        );
         Ok(())
     }
 
@@ -189,14 +197,18 @@ impl<T: EthSpec> ProcessorService<T> {
             let pending_tx = PendingTransaction::new(tx_hash, provider);
             let receipt = pending_tx.await?.ok_or(anyhow!("Transaction not found"))?;
             let finality = get_current_finality_block_number::<T>(&self.eth2_client).await?;
-            if receipt.block_number.ok_or(anyhow!("block number not found"))? <= finality.into() {
+            if receipt
+                .block_number
+                .ok_or(anyhow!("block number not found"))?
+                <= finality.into()
+            {
                 let conn = self.pool.get().await?;
                 self.update_eth_tx_to_finality(&conn, tx_hash).await?;
-                return Ok(())
+                return Ok(());
             }
             sleep(Duration::from_secs(12)).await;
         }
-    } 
+    }
 
     async fn prepare_batch_deposit_data(
         &self,
@@ -205,7 +217,10 @@ impl<T: EthSpec> ProcessorService<T> {
         let batch_stored = self.select_pending_deposit_data(client).await?;
         // TODO: Check the number
         if batch_stored.len() < 10 {
-            info!("[Processor]Prepare pending batch not met the target, num: {}", batch_stored.len());
+            info!(
+                "[Processor]Prepare pending batch not met the target, num: {}",
+                batch_stored.len()
+            );
             return Ok(None);
         }
         Ok(Some(batch_stored))
@@ -263,13 +278,20 @@ impl<T: EthSpec> ProcessorService<T> {
         Ok(kys)
     }
 
-    async fn select_eth_transactions(&self, client: &Client) -> Result<Option<StoredEthTransaction>> {
+    async fn select_eth_transactions(
+        &self,
+        client: &Client,
+    ) -> Result<Option<StoredEthTransaction>> {
         let mut txs = select_pending_eth_transactions(client).await?;
-        ensure!(txs.len() <= 1, "Critical bug, pending transactions in db should be less than 1, found: {}", txs.len());
+        ensure!(
+            txs.len() <= 1,
+            "Critical bug, pending transactions in db should be less than 1, found: {}",
+            txs.len()
+        );
         if txs.is_empty() {
-            return Ok(None)
+            return Ok(None);
         }
-        return Ok(Some(txs.pop().unwrap()))
+        Ok(Some(txs.pop().unwrap()))
     }
 
     async fn insert_eth_transaction(
@@ -342,16 +364,14 @@ impl<T: EthSpec> ProcessorService<T> {
         update_eth_tx_to_finality(client, tx_hash).await?;
         Ok(())
     }
-
 }
 
 #[cfg(test)]
 mod tests {
     use std::env;
 
-    use ethers::{types::Bytes, utils::hex::FromHex, providers::PendingTransaction};
+    use ethers::{providers::PendingTransaction, types::Bytes, utils::hex::FromHex};
     use lighthouse_types::Hash256;
-
 
     #[test]
     fn test_tx_hash() {
