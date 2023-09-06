@@ -9,4 +9,4 @@ CREATE TABLE hellman_validators (
     data JSON
 );
 
-CREATE INDEX validators_wc_idx ON hellman_validators;
+CREATE INDEX validators_wc_idx ON hellman_validators(withdrawal_credentials);

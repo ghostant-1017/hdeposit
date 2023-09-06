@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use eth2::types::{StateId, ValidatorId};
 use storage::models::{insert_or_update_validators, query_used_keystore};
+use tracing::info;
 
 use super::Updater;
 
@@ -20,6 +21,7 @@ impl Updater {
             .map_err(|err| anyhow!("{err}"))?
             .unwrap();
         let validators = validators.data;
+        info!("Prepare to update validators: {}", validators.len());
         insert_or_update_validators(&conn, &validators).await?;
         Ok(())
     }
