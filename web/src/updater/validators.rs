@@ -16,7 +16,7 @@ impl Updater {
             .collect();
         let validators = self
             .beacon
-            .get_beacon_states_validators(StateId::Finalized, Some(&validator_ids), None)
+            .get_beacon_states_validators(StateId::Head, Some(&validator_ids), None)
             .await
             .map_err(|err| anyhow!("{err}"))?
             .unwrap();
