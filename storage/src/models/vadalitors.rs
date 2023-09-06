@@ -7,9 +7,9 @@ pub async fn insert_or_update_validators(
     client: &Client,
     validators: &Vec<ValidatorData>,
 ) -> Result<()> {
-    let sql = "insert into hellman_validators (index, withdrawal_credentials, data)
+    let sql = "insert into hellman_validators(index, withdrawal_credentials, data)
     values ($1, $2, $3) 
-        on conflict index do update set data = $3;";
+    on conflict (index) do update set data = $3;";
     for validator in validators {
         // TODO: Optimize sql
         let index = validator.index as i64;
