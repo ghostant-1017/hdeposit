@@ -4,7 +4,7 @@ use clap::Parser;
 use eth2::{BeaconNodeHttpClient, SensitiveUrl, Timeouts, Url};
 use storage::db::initial_pg_pool;
 
-use crate::{api::Server, updater::Updater};
+use crate::{api::Server, updater::Updater, logger};
 
 #[derive(Parser, Clone, Debug)]
 pub struct Cli {
@@ -24,6 +24,7 @@ pub struct Cli {
 
 impl Cli {
     pub async fn exec(self) -> anyhow::Result<()> {
+        logger::init(0);
         let beacon = BeaconNodeHttpClient::new(
             SensitiveUrl::parse(&self.eth2_endpoint).expect("invalid eth2_endpoint"),
             Timeouts::set_all(Duration::from_secs(5)),
