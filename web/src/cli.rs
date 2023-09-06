@@ -3,6 +3,7 @@ use std::{net::SocketAddr, time::Duration};
 use clap::Parser;
 use eth2::{BeaconNodeHttpClient, SensitiveUrl, Timeouts, Url};
 use storage::db::initial_pg_pool;
+use tracing::info;
 
 use crate::{api::Server, updater::Updater, logger};
 
@@ -34,6 +35,7 @@ impl Cli {
         let server = Server::new(pool);
         tokio::spawn(async move { updater.run().await });
         server.start(self.socket).await?;
+        info!("Server closed");
         Ok(())
     }
 }
