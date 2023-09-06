@@ -9,5 +9,5 @@ pub use eth_transactions::*;
 mod vadalitors;
 pub use vadalitors::*;
 
-use contract::vault::PreDepositFilter;
 use anyhow::{anyhow, Result};
+use contract::vault::PreDepositFilter;

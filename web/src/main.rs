@@ -1,13 +1,9 @@
-mod utils;
+use clap::Parser;
+use web::cli::Cli;
 
-fn main() {
-    println!("Hello, world!");
-}
-use anyhow::Result;
-use eth2::BeaconNodeHttpClient;
-pub async fn update_validators(client: &BeaconNodeHttpClient) -> Result<()> {
-    // 1. Query from pg table `deposit_data`
-    // 2. Query Validators from beacon node by pubkey
-    // 3. Update pg table `validators`
-    todo!()
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+    cli.exec().await?;
+    Ok(())
 }

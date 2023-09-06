@@ -54,7 +54,6 @@ pub async fn update_keystore_fk(
     Ok(result)
 }
 
-
 pub async fn query_used_keystore(client: &Client) -> Result<Vec<StoredKeyStore>> {
     let rows = client
         .query(

@@ -1,9 +1,12 @@
+use anyhow::Result;
 use bb8_postgres::tokio_postgres::Client;
 use eth2::types::ValidatorData;
-use anyhow::Result;
 use lighthouse_types::Hash256;
 
-pub async fn insert_or_update_validators(client: &Client, validators: &Vec<ValidatorData>) -> Result<()> {
+pub async fn insert_or_update_validators(
+    client: &Client,
+    validators: &Vec<ValidatorData>,
+) -> Result<()> {
     let sql = "insert into hellman_validators (index, withdrawal_credentials, data)
     values ($1, $2, $3) 
         on conflict index do update set data = $3;";
@@ -17,7 +20,10 @@ pub async fn insert_or_update_validators(client: &Client, validators: &Vec<Valid
     Ok(())
 }
 
-pub async fn select_validators_by_credentials(client: &Client, wc: Hash256) -> Result<Vec<ValidatorData>> {
+pub async fn select_validators_by_credentials(
+    client: &Client,
+    wc: Hash256,
+) -> Result<Vec<ValidatorData>> {
     let sql = "select * from validators where withdrawal_credentials = $1";
     let rows = client.query(sql, &[&serde_json::to_string(&wc)?]).await?;
     let mut result = vec![];

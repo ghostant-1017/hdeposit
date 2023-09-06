@@ -6,5 +6,5 @@ mod logger;
 mod service;
 pub use storage;
 mod utils;
-pub use contract::vault as vault;
+pub use contract::vault;
 mod wallet;
