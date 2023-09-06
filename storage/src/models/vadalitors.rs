@@ -24,7 +24,7 @@ pub async fn select_validators_by_credentials(
     client: &Client,
     wc: Hash256,
 ) -> Result<Vec<ValidatorData>> {
-    let sql = "select * from validators where withdrawal_credentials = $1";
+    let sql = "select * from hellman_validators where withdrawal_credentials = $1";
     let rows = client.query(sql, &[&serde_json::to_string(&wc)?]).await?;
     let mut result = vec![];
     for row in rows {
