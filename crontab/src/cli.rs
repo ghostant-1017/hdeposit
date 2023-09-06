@@ -7,7 +7,7 @@ use crate::{
     vault::Vault,
     wallet::inital_wallet_from_env,
 };
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context, Result, ensure};
 use clap::Parser;
 use ethers::prelude::SignerMiddleware;
 use ethers::types::Address;
@@ -45,6 +45,9 @@ pub struct Cli {
     /// geriol: 1
     #[clap(long)]
     chain_id: i8,
+
+    #[clap(long, default_value="1")]
+    batch: u64,
 }
 
 impl Cli {
@@ -62,7 +65,7 @@ impl Cli {
         let client = Arc::new(SignerMiddleware::new_with_provider_chain(provider, wallet).await?);
         let contract = Vault::new(contract_addr, client);
         let eth2_client = new_eth2_client(self.eth2_endpoint.as_str())?;
-
+        ensure!(self.batch <= 50, "Batch should less than 50");
         let spec = match self.chain_id {
             0 => ChainSpec::mainnet(),
             _ => {
@@ -76,7 +79,7 @@ impl Cli {
             pool.clone(),
         )?;
         let proc_service =
-            ProcessorService::new(eth2_client.clone(), pool, &self.password, spec, contract);
+            ProcessorService::new(eth2_client.clone(), pool, &self.password, spec, contract, self.batch);
         run(self.start, evt_service, proc_service).await?;
         Ok(())
     }

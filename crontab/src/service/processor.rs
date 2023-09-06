@@ -38,6 +38,7 @@ pub struct ProcessorService<T: EthSpec> {
     password: String,
     spec: ChainSpec,
     contract: VaultContract,
+    batch: u64,
     _p: PhantomData<T>,
 }
 
@@ -48,6 +49,7 @@ impl<T: EthSpec> ProcessorService<T> {
         password: &str,
         spec: ChainSpec,
         contract: VaultContract,
+        batch: u64,
     ) -> Self {
         Self {
             eth2_client,
@@ -55,6 +57,7 @@ impl<T: EthSpec> ProcessorService<T> {
             password: password.to_owned(),
             spec,
             contract,
+            batch,
             _p: Default::default(),
         }
     }
@@ -215,11 +218,11 @@ impl<T: EthSpec> ProcessorService<T> {
         client: &Client,
     ) -> Result<Option<Vec<StoredDepositData>>> {
         let batch_stored = self.select_pending_deposit_data(client).await?;
-        // TODO: Check the number
-        if batch_stored.len() < 10 {
+        if batch_stored.len() < self.batch as usize{
             info!(
-                "[Processor]Prepare pending batch not met the target, num: {}",
-                batch_stored.len()
+                "[Processor]Prepare pending batch not met the target, num: {}, batch: {}",
+                batch_stored.len(),
+                self.batch
             );
             return Ok(None);
         }
