@@ -21,7 +21,7 @@ impl Updater {
             if let Err(err) = self.update_validators().await {
                 error!("Update validators: {}", err);
             }
-            tokio::time::sleep(Duration::from_secs(5)).await
+            tokio::time::sleep(Duration::from_secs(12)).await
         }
     }
 }
