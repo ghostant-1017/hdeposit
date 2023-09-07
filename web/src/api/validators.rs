@@ -1,7 +1,5 @@
 use super::*;
-use axum::{extract::State, Json};
 use eth2::types::{Hash256, ValidatorData};
-use serde::Deserialize;
 use storage::models::select_validators_by_credentials;
 
 #[derive(Debug, Deserialize)]
@@ -15,6 +13,9 @@ pub async fn get_validators(
 ) -> Result<Json<Vec<ValidatorData>>, AppError> {
     info!("Query validators: {}", params.wc);
     let conn = server.pool.get().await?;
-    let validators = select_validators_by_credentials(&conn, params.wc).await?;
+    let mut validators = select_validators_by_credentials(&conn, params.wc).await?;
+    validators.iter_mut().for_each(|validator| {
+        validator.status = validator.status.superstatus();
+    });
     Ok(Json(validators))
 }

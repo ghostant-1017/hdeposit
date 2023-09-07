@@ -10,6 +10,8 @@ resolver = "2"
 lighthouse-types = { git = "ssh://git@github.com/sigp/lighthouse.git", branch = "stable", package = "types"}
 lighthouse-bls = { git = "ssh://git@github.com/sigp/lighthouse.git", branch = "stable", package = "bls"}
 eth2_keystore = { git = "ssh://git@github.com/sigp/lighthouse.git", branch = "stable", package = "eth2_keystore"}
+slot_clock = { git = "ssh://git@github.com/sigp/lighthouse.git", branch = "stable", package = "slot_clock"}
+
 eth2 = { git = "ssh://git@github.com/sigp/lighthouse.git", branch = "stable", package = "eth2"}
 ethers = "2.0.9"
 

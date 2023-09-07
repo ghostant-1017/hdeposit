@@ -6369,6 +6369,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "slot_clock"
+version = "0.2.0"
+source = "git+ssh://git@github.com/sigp/lighthouse.git?branch=stable#2841f60686d642fcc0785c884d43e34e47a800dc"
+dependencies = [
+ "lazy_static",
+ "lighthouse_metrics",
+ "parking_lot 0.12.1",
+ "types",
+]
+
+[[package]]
 name = "smallvec"
 version = "0.6.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7693,6 +7704,8 @@ dependencies = [
  "eth2",
  "serde",
  "serde_json",
+ "serde_yaml 0.9.25",
+ "slot_clock",
  "storage",
  "tokio",
  "tracing",
