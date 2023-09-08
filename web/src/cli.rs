@@ -46,7 +46,7 @@ impl Cli {
         );
 
         let pool = initial_pg_pool(self.dsn).await?;
-        let updater = Updater::new(beacon.clone(), pool.clone());
+        let updater = Updater::<MainnetEthSpec>::new(beacon.clone(), pool.clone());
         let server = Server::new(pool, clock);
         tokio::spawn(async move { updater.run().await });
         server.start(self.socket).await?;

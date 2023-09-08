@@ -21,7 +21,7 @@ impl<T: EthSpec> Updater<T>  {
             .map_err(|err| anyhow!("{err}"))?
             .unwrap();
         let validators = validators.data;
-        info!("Prepare to update validators: {}", validators.len());
+        info!("Total: {}, Prepare to update validators: {}", validator_ids.len(), validators.len());
         insert_or_update_validators(&conn, &validators).await?;
         Ok(())
     }
