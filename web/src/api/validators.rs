@@ -1,21 +1,38 @@
 use super::*;
 use eth2::types::{Hash256, ValidatorData};
-use storage::models::select_validators_by_credentials;
+use storage::models::{select_validators_by_credentials, select_withdrawals};
 
 #[derive(Debug, Deserialize)]
 pub struct Params {
     wc: Hash256,
 }
 
+#[derive(Serialize)]
+pub struct HValidator {
+    pub validator_data: ValidatorData,
+    pub protocol_reward: u64,
+}
+
 pub async fn get_validators(
     Query(params): Query<Params>,
     State(server): State<Server>,
-) -> Result<Json<Vec<ValidatorData>>, AppError> {
+) -> Result<Json<Vec<HValidator>>, AppError> {
     info!("Query validators: {}", params.wc);
-    let conn = server.pool.get().await?;
-    let mut validators = select_validators_by_credentials(&conn, params.wc).await?;
+    let mut conn = server.pool.get().await?;
+    let tx = conn.transaction().await?;
+    let mut result = vec![];
+    let mut validators = select_validators_by_credentials(tx.client(), params.wc).await?;
     validators.iter_mut().for_each(|validator| {
         validator.status = validator.status.superstatus();
     });
-    Ok(Json(validators))
+    for validator in validators {
+        let protocol_reward: u64 = select_withdrawals(tx.client(), validator.index)
+        .await?
+        .into_iter()
+        .map(|withdrawl| withdrawl.amount)
+        .sum();
+        result.push(HValidator{validator_data: validator, protocol_reward})
+    }
+
+    Ok(Json(result))
 }

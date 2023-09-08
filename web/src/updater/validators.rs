@@ -1,11 +1,11 @@
 use anyhow::{anyhow, Result};
-use eth2::types::{StateId, ValidatorId};
+use eth2::types::{StateId, ValidatorId, EthSpec};
 use storage::models::{insert_or_update_validators, query_used_keystore};
 use tracing::info;
 
 use super::Updater;
 
-impl Updater {
+impl<T: EthSpec> Updater<T>  {
     pub async fn update_validators(&self) -> Result<()> {
         let conn = self.pool.get().await?;
         let validator_ids: Vec<_> = query_used_keystore(&conn)

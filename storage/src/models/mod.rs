@@ -8,6 +8,8 @@ mod eth_transactions;
 pub use eth_transactions::*;
 mod vadalitors;
 pub use vadalitors::*;
+mod withdrawals;
+pub use withdrawals::*;
 
 use anyhow::{anyhow, Result};
 use contract::vault::PreDepositFilter;

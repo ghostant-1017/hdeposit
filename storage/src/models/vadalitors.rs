@@ -33,3 +33,16 @@ pub async fn select_validators_by_credentials(
     }
     Ok(result)
 }
+
+pub async fn select_all_validators(
+    client: &Client,
+) -> Result<Vec<ValidatorData>> {
+    let sql = "select * from hellman_validators;";
+    let rows = client.query(sql, &[]).await?;
+    let mut result = vec![];
+    for row in rows {
+        let data = serde_json::from_value(row.get("data"))?;
+        result.push(data);
+    }
+    Ok(result)
+}
