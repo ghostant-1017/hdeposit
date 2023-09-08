@@ -4,7 +4,7 @@ use super::*;
 use anyhow::{anyhow, Result};
 use bb8_postgres::tokio_postgres::Client;
 use eth2::types::{BlockId, SignedBeaconBlock};
-use storage::models::{insert_withdrawals, select_all_validators, select_last_slot};
+use storage::models::{upsert_withdrawals, select_all_validators, select_last_slot};
 
 impl<T: EthSpec> Updater<T> {
     pub async fn update_withdrawals(&self) -> Result<()> {
@@ -57,7 +57,7 @@ impl<T: EthSpec> Updater<T> {
             .into_iter()
             .filter(|withdrawal| validator_indexes.contains(&withdrawal.validator_index))
             .collect();
-        insert_withdrawals(client, slot, &withdrawals).await?;
+        upsert_withdrawals(client, &withdrawals).await?;
         Ok(())
     }
 }

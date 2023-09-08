@@ -1,6 +1,6 @@
 use super::*;
 use eth2::types::{Hash256, ValidatorData};
-use storage::models::{select_validators_by_credentials, select_withdrawals};
+use storage::models::{select_validators_by_credentials, select_withdrawals_by_validator_index};
 
 #[derive(Debug, Deserialize)]
 pub struct Params {
@@ -26,7 +26,7 @@ pub async fn get_validators(
         validator.status = validator.status.superstatus();
     });
     for validator in validators {
-        let protocol_reward: u64 = select_withdrawals(tx.client(), validator.index)
+        let protocol_reward: u64 = select_withdrawals_by_validator_index(tx.client(), validator.index)
             .await?
             .into_iter()
             .map(|withdrawl| withdrawl.amount)

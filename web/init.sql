@@ -9,4 +9,11 @@ CREATE TABLE hellman_validators (
     data JSON
 );
 
+CREATE TABLE withdrawals (
+    index PRIMARY KEY,
+    validator_index BIGINT NOT NULL,
+    address VARCHAR NOT NULL,
+    amount BIGINT NOT NULL
+);
+
 CREATE INDEX validators_wc_idx ON hellman_validators(withdrawal_credentials);
