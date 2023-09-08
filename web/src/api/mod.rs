@@ -1,19 +1,18 @@
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use axum::{extract::State, Json};
 use axum::{extract::Query, routing::get, Router};
+use axum::{extract::State, Json};
 use eth2::types::ChainSpec;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+mod balance;
 mod err;
 mod validators;
-mod balance;
 use err::*;
+use slot_clock::SlotClock;
 use slot_clock::SystemTimeSlotClock;
 use storage::db::PgPool;
 use tracing::info;
-use slot_clock::SlotClock;
-
 
 use crate::api::balance::get_balance;
 
@@ -22,7 +21,7 @@ use self::validators::get_validators;
 #[derive(Clone)]
 pub struct Server {
     pub pool: PgPool,
-    pub clock: SystemTimeSlotClock
+    pub clock: SystemTimeSlotClock,
 }
 
 impl Server {
@@ -30,7 +29,7 @@ impl Server {
         let clock = slot_clock::SystemTimeSlotClock::new(
             spec.genesis_slot,
             Duration::from_secs(spec.min_genesis_time),
-            Duration::from_secs(spec.seconds_per_slot)
+            Duration::from_secs(spec.seconds_per_slot),
         );
         Self { pool, clock }
     }

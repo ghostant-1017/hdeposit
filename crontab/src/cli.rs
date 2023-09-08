@@ -7,7 +7,7 @@ use crate::{
     vault::Vault,
     wallet::inital_wallet_from_env,
 };
-use anyhow::{anyhow, Context, Result, ensure};
+use anyhow::{anyhow, ensure, Context, Result};
 use clap::Parser;
 use ethers::prelude::SignerMiddleware;
 use ethers::types::Address;
@@ -46,7 +46,7 @@ pub struct Cli {
     #[clap(long)]
     chain_id: i8,
 
-    #[clap(long, default_value="1")]
+    #[clap(long, default_value = "1")]
     batch: u64,
 }
 
@@ -78,8 +78,14 @@ impl Cli {
             contract.clone(),
             pool.clone(),
         )?;
-        let proc_service =
-            ProcessorService::new(eth2_client.clone(), pool, &self.password, spec, contract, self.batch);
+        let proc_service = ProcessorService::new(
+            eth2_client.clone(),
+            pool,
+            &self.password,
+            spec,
+            contract,
+            self.batch,
+        );
         run(self.start, evt_service, proc_service).await?;
         Ok(())
     }

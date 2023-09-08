@@ -218,7 +218,7 @@ impl<T: EthSpec> ProcessorService<T> {
         client: &Client,
     ) -> Result<Option<Vec<StoredDepositData>>> {
         let batch_stored = self.select_pending_deposit_data(client).await?;
-        if batch_stored.len() < self.batch as usize{
+        if batch_stored.len() < self.batch as usize {
             info!(
                 "[Processor]Prepare pending batch not met the target, num: {}, batch: {}",
                 batch_stored.len(),

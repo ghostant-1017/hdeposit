@@ -1,6 +1,6 @@
-use std::{time::Duration, marker::PhantomData};
+use std::{marker::PhantomData, time::Duration};
 
-use eth2::{BeaconNodeHttpClient, types::EthSpec};
+use eth2::{types::EthSpec, BeaconNodeHttpClient};
 use storage::db::PgPool;
 use tracing::error;
 
@@ -9,12 +9,16 @@ mod withdrawals;
 pub struct Updater<T: EthSpec> {
     beacon: BeaconNodeHttpClient,
     pool: PgPool,
-    _p: PhantomData<T>
+    _p: PhantomData<T>,
 }
 
 impl<T: EthSpec> Updater<T> {
     pub fn new(beacon: BeaconNodeHttpClient, pool: PgPool) -> Self {
-        Self { beacon, pool, _p: Default::default() }
+        Self {
+            beacon,
+            pool,
+            _p: Default::default(),
+        }
     }
 
     pub async fn run(self) {

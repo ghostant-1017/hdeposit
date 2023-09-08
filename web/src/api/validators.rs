@@ -27,11 +27,14 @@ pub async fn get_validators(
     });
     for validator in validators {
         let protocol_reward: u64 = select_withdrawals(tx.client(), validator.index)
-        .await?
-        .into_iter()
-        .map(|withdrawl| withdrawl.amount)
-        .sum();
-        result.push(HValidator{validator_data: validator, protocol_reward})
+            .await?
+            .into_iter()
+            .map(|withdrawl| withdrawl.amount)
+            .sum();
+        result.push(HValidator {
+            validator_data: validator,
+            protocol_reward,
+        })
     }
 
     Ok(Json(result))

@@ -1,8 +1,5 @@
 use anyhow::{anyhow, Result};
-use eth2::{
-    types::{BlockId, StateId, ValidatorData},
-    BeaconNodeHttpClient, SensitiveUrl, Timeouts,
-};
+use eth2::{types::BlockId, BeaconNodeHttpClient, SensitiveUrl, Timeouts};
 use lighthouse_types::EthSpec;
 use std::time::Duration;
 
