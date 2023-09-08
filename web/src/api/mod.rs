@@ -1,7 +1,9 @@
 use std::net::SocketAddr;
+use std::time::Duration;
 
 use axum::{extract::State, Json};
 use axum::{extract::Query, routing::get, Router};
+use eth2::types::ChainSpec;
 use serde::{Serialize, Deserialize};
 mod err;
 mod validators;
@@ -24,7 +26,12 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(pool: PgPool, clock: SystemTimeSlotClock) -> Self {
+    pub fn new(pool: PgPool, spec: ChainSpec) -> Self {
+        let clock = slot_clock::SystemTimeSlotClock::new(
+            spec.genesis_slot,
+            Duration::from_secs(spec.min_genesis_time),
+            Duration::from_secs(spec.seconds_per_slot)
+        );
         Self { pool, clock }
     }
 
