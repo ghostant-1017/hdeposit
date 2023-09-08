@@ -52,14 +52,3 @@ fn row_to_withdrawal(row: Row) -> Result<Withdrawal> {
         amount: amount as u64,
     })
 }
-
-pub async fn select_last_slot(client: &Client) -> Result<u64> {
-    let row = client
-        .query_opt("select max(slot) from withdrawals;", &[])
-        .await?;
-    let slot: i64 = match row {
-        Some(row) => row.get(0),
-        None => 0,
-    };
-    Ok(slot as u64)
-}
