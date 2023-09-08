@@ -26,11 +26,12 @@ pub async fn get_validators(
         validator.status = validator.status.superstatus();
     });
     for validator in validators {
-        let protocol_reward: u64 = select_withdrawals_by_validator_index(tx.client(), validator.index)
-            .await?
-            .into_iter()
-            .map(|withdrawl| withdrawl.amount)
-            .sum();
+        let protocol_reward: u64 =
+            select_withdrawals_by_validator_index(tx.client(), validator.index)
+                .await?
+                .into_iter()
+                .map(|withdrawl| withdrawl.amount)
+                .sum();
         result.push(HValidator {
             validator_data: validator,
             protocol_reward,

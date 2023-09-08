@@ -1,12 +1,8 @@
 use anyhow::Result;
 use bb8_postgres::tokio_postgres::{Client, Row};
-use lighthouse_types::{Withdrawal, Address};
+use lighthouse_types::{Address, Withdrawal};
 
-
-pub async fn upsert_withdrawals(
-    client: &Client,
-    withdrawals: &Vec<Withdrawal>,
-) -> Result<()> {
+pub async fn upsert_withdrawals(client: &Client, withdrawals: &Vec<Withdrawal>) -> Result<()> {
     for withdrawal in withdrawals {
         client
             .execute(
@@ -25,7 +21,10 @@ pub async fn upsert_withdrawals(
     Ok(())
 }
 
-pub async fn select_withdrawals_by_validator_index(client: &Client, validator_index: u64) -> Result<Vec<Withdrawal>> {
+pub async fn select_withdrawals_by_validator_index(
+    client: &Client,
+    validator_index: u64,
+) -> Result<Vec<Withdrawal>> {
     let rows = client
         .query(
             "select * from withdrawals where validator_index = $1;",
@@ -46,7 +45,12 @@ fn row_to_withdrawal(row: Row) -> Result<Withdrawal> {
     let address: String = row.get("address");
     let address: Address = serde_json::from_str(&address)?;
     let amount: i64 = row.get("amount");
-    Ok(Withdrawal { index: index as u64, validator_index: validator_index as u64, address, amount: amount as u64 })
+    Ok(Withdrawal {
+        index: index as u64,
+        validator_index: validator_index as u64,
+        address,
+        amount: amount as u64,
+    })
 }
 
 pub async fn select_last_slot(client: &Client) -> Result<u64> {

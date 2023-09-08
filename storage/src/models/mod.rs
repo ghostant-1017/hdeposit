@@ -10,6 +10,8 @@ mod vadalitors;
 pub use vadalitors::*;
 mod withdrawals;
 pub use withdrawals::*;
+mod sync_states;
+pub use sync_states::*;
 
 use anyhow::{anyhow, Result};
 use contract::vault::PreDepositFilter;
