@@ -1,18 +1,21 @@
-use std::{net::SocketAddr, time::Duration};
+use std::{net::SocketAddr, time::Duration, sync::Arc};
 
 use clap::Parser;
+use contract::deposit::DepositContract;
 use eth2::{
     types::{ChainSpec, ConfigAndPreset, MainnetEthSpec},
     BeaconNodeHttpClient, SensitiveUrl, Timeouts,
 };
-use slot_clock::SlotClock;
 use storage::db::initial_pg_pool;
 use tracing::info;
-
+use ethers::providers::Provider;
 use crate::{api::Server, logger, updater::Updater};
 
 #[derive(Parser, Clone, Debug)]
 pub struct Cli {
+    #[clap(long)]
+    eth1_endpoint: String,
+
     #[clap(long)]
     eth2_endpoint: String,
 
@@ -31,6 +34,7 @@ impl Cli {
             SensitiveUrl::parse(&self.eth2_endpoint).expect("invalid eth2_endpoint"),
             Timeouts::set_all(Duration::from_secs(5)),
         );
+        let eth1_provider = ethers::providers::Provider::try_from(self.eth1_endpoint.as_str())?;
         let config_and_preset: ConfigAndPreset = beacon
             .get_config_spec()
             .await
@@ -39,7 +43,9 @@ impl Cli {
         let spec = ChainSpec::from_config::<MainnetEthSpec>(config_and_preset.config())
             .ok_or(anyhow::anyhow!("from config"))?;
         let pool = initial_pg_pool(self.dsn).await?;
-        let updater = Updater::<MainnetEthSpec>::new(beacon.clone(), pool.clone());
+        let deposit_contract = DepositContract::new(spec.deposit_contract_address, Arc::new(eth1_provider));
+        
+        let updater = Updater::<MainnetEthSpec>::new(beacon.clone(), pool.clone(), eth1_provider);
 
         let server = Server::new(pool, spec);
         tokio::spawn(async move { updater.run().await });

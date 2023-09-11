@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use eth2::types::{EthSpec, StateId, ValidatorId};
-use storage::models::{insert_or_update_validators, query_used_keystore};
+use storage::models::{upsert_validators, query_used_keystore};
 use tracing::info;
 
 use super::Updater;
@@ -26,7 +26,7 @@ impl<T: EthSpec> Updater<T> {
             validator_ids.len(),
             validators.len()
         );
-        insert_or_update_validators(&conn, &validators).await?;
+        upsert_validators(&conn, &validators).await?;
         Ok(())
     }
 }

@@ -5,12 +5,14 @@ CREATE TABLE sync_states (
 
 CREATE TABLE hellman_validators (
     index BIGINT PRIMARY KEY,
+    pubkey VARCHAR NOT NULL,
     withdrawal_credentials VARCHAR NOT NULL,
+    amount BIGINT NOT NULL,
     data JSON
 );
 
 CREATE TABLE withdrawals (
-    index PRIMARY KEY,
+    index BIGINT PRIMARY KEY,
     validator_index BIGINT NOT NULL,
     address VARCHAR NOT NULL,
     amount BIGINT NOT NULL

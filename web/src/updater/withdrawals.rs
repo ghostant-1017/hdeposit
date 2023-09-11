@@ -4,7 +4,10 @@ use super::*;
 use anyhow::{anyhow, Result};
 use bb8_postgres::tokio_postgres::Client;
 use eth2::types::{BlockId, SignedBeaconBlock};
-use storage::models::{select_all_validators, upsert_withdrawals, select_sync_state, SyncState, upsert_sync_state};
+use storage::models::{
+    select_all_validators, select_sync_state, upsert_sync_state, upsert_withdrawals, SyncState,
+};
+use tracing::info;
 
 impl<T: EthSpec> Updater<T> {
     pub async fn update_withdrawals(&self) -> Result<()> {
@@ -12,8 +15,9 @@ impl<T: EthSpec> Updater<T> {
         let tx = conn.transaction().await?;
         // 1.Fetch last synced withdrawals slot
         // let last_slot = select_sync_state(tx.client(), &SyncState::WithdrawalLastSlot).await?;
-        let finalized_slot = select_sync_state(tx.client(), &SyncState::WithdrawalFinalizedSlot).await?;
-        let start = finalized_slot.unwrap();
+        let finalized_slot =
+            select_sync_state(tx.client(), &SyncState::WithdrawalFinalizedSlot).await?;
+        let start = finalized_slot.unwrap_or_default();
 
         let validator_indexes: HashSet<_> = select_all_validators(tx.client())
             .await?
@@ -29,6 +33,7 @@ impl<T: EthSpec> Updater<T> {
             .unwrap();
         let end = current_finalized.data.slot().as_u64();
         // 3.Query [start,end] blocks
+        info!("Update withdrawals from {start} to {end}");
         for slot in start..=end {
             let block = self
                 .beacon
@@ -40,7 +45,12 @@ impl<T: EthSpec> Updater<T> {
             Self::insert_block_withdrawals(tx.client(), block, &validator_indexes).await?;
         }
 
-        upsert_sync_state(tx.client(), &SyncState::WithdrawalFinalizedSlot, &(end as i64)).await?;
+        upsert_sync_state(
+            tx.client(),
+            &SyncState::WithdrawalFinalizedSlot,
+            &(end as i64),
+        )
+        .await?;
         tx.commit().await?;
         Ok(())
     }

@@ -81,3 +81,18 @@ pub async fn update_eth_tx_to_finality(client: &Client, tx_hash: Hash256) -> Res
         .await?;
     Ok(result)
 }
+
+pub async fn select_pending_eth_txs_by_gt_pk(
+    client: &Client,
+    pk: i64,
+) -> Result<Vec<StoredEthTransaction>> {
+    let rows = client
+        .query("select * from eth_transactions where pk > $1 and finality = false order by pk asc;", &[&pk])
+        .await?;
+    let mut results = vec![];
+    for row in rows {
+        let tx = row.try_into()?;
+        results.push(tx);
+    }
+    Ok(results)
+}
