@@ -34,6 +34,7 @@ impl<T: EthSpec> Updater<T> {
         // 3.Query [start,end] blocks
         info!("Update withdrawals from {start} to {end}");
         for slot in start..=end {
+            info!("Update withdrawals current slot: {}", slot);
             let block = self
                 .beacon
                 .get_beacon_blocks(BlockId::Slot(slot.into()))

@@ -19,13 +19,13 @@ impl SyncState {
 pub async fn select_sync_state(client: &Client, state: &SyncState) -> Result<Option<u64>> {
     let value = client
         .query_opt(
-            "select value from sync_states where name = $1;",
+            "select val from sync_states where name = $1;",
             &[&state.to_key()],
         )
         .await?;
     match value {
         Some(row) => {
-            let value: i64 = row.get("value");
+            let value: i64 = row.get("val");
             Ok(Some(value as u64))
         }
         None => Ok(None),
@@ -39,9 +39,9 @@ pub async fn upsert_sync_state(
 ) -> Result<()> {
     client
         .execute(
-            "insert into sync_states (name, value) values ($1, $2) 
+            "insert into sync_states (name, val) values ($1, $2) 
             on conflict (name)
-            do update set value = $2;",
+            do update set val = $2;",
             &[&state.to_key(), val],
         )
         .await?;

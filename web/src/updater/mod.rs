@@ -37,14 +37,14 @@ impl<T: EthSpec> Updater<T> {
 
     pub async fn run(self) {
         loop {
+            if let Err(err) = self.update_deposit_events().await {
+                error!("Update deposit_events: {}", err);
+            }
             if let Err(err) = self.update_validators().await {
                 error!("Update validators: {}", err);
             }
             if let Err(err) = self.update_withdrawals().await {
                 error!("Update withdrawls: {}", err);
-            }
-            if let Err(err) = self.update_deposit_events().await {
-                error!("Update deposit_events: {}", err);
             }
             tokio::time::sleep(Duration::from_secs(12)).await
         }
