@@ -1,13 +1,13 @@
 use super::*;
 use anyhow::Result;
-use contract::deposit::{DepositContract as DepositContractABI, DepositEventFilter};
-use eth2::types::Hash256;
+use contract::deposit::DepositEventFilter;
+
 use ethers::prelude::LogMeta;
-use ethers::{
-    providers::{Http, Middleware, Provider},
-    types::{Filter, Log, H256},
+use ethers::{providers::Middleware, types::H256};
+use storage::models::{
+    select_pending_eth_txs_by_gt_pk, select_sync_state, upsert_sync_state,
+    upsert_validators_by_logs, SyncState,
 };
-use storage::models::{select_pending_eth_txs_by_gt_pk, select_sync_state, SyncState, upsert_sync_state, upsert_validators_by_logs};
 
 impl<T: EthSpec> Updater<T> {
     // Query the pending deposit events and update `hellman_validators` table
@@ -18,17 +18,20 @@ impl<T: EthSpec> Updater<T> {
             .await?
             .unwrap_or_default();
         let txs = select_pending_eth_txs_by_gt_pk(db_tx.client(), tx_pk as i64).await?;
-        if txs.len() == 0 {
-            return Ok(())
+        if txs.is_empty() {
+            return Ok(());
         }
         let mut current_pk = 0;
         for tx in txs {
             let logs = match get_logs_by_txhash(self.deposit_contract.clone(), tx.tx_hash).await? {
                 Some(logs) => logs.into_iter().map(|log| log.0).collect(),
                 None => {
-                    tracing::warn!("Cannot find transaction: {} ralated deposit events.", tx.tx_hash);
+                    tracing::warn!(
+                        "Cannot find transaction: {} ralated deposit events.",
+                        tx.tx_hash
+                    );
                     break;
-                },
+                }
             };
             current_pk = tx.pk;
             // Insert into validators table by logs;

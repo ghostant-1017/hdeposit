@@ -87,7 +87,10 @@ pub async fn select_pending_eth_txs_by_gt_pk(
     pk: i64,
 ) -> Result<Vec<StoredEthTransaction>> {
     let rows = client
-        .query("select * from eth_transactions where pk > $1 and finality = false order by pk asc;", &[&pk])
+        .query(
+            "select * from eth_transactions where pk > $1 and finality = false order by pk asc;",
+            &[&pk],
+        )
         .await?;
     let mut results = vec![];
     for row in rows {

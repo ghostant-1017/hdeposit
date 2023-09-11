@@ -230,7 +230,7 @@ pub mod deposit_contract {
         > {
             let factory = ::ethers::contract::ContractFactory::new(
                 DEPOSITCONTRACT_ABI.clone(),
-                DEPOSITCONTRACT_BYTECODE.clone().into(),
+                DEPOSITCONTRACT_BYTECODE.clone(),
                 client,
             );
             let deployer = factory.deploy(constructor_args)?;

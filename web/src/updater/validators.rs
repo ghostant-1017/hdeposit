@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use eth2::types::{EthSpec, StateId, ValidatorId};
-use storage::models::{upsert_validators, query_used_keystore};
+use storage::models::{query_used_keystore, upsert_validators};
 use tracing::info;
 
 use super::Updater;

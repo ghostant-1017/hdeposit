@@ -2,10 +2,10 @@ use std::{marker::PhantomData, time::Duration};
 
 use contract::deposit::DepositContract as DepositContractABI;
 use eth2::{types::EthSpec, BeaconNodeHttpClient};
+use ethers::providers::Http;
+use ethers::providers::Provider;
 use storage::db::PgPool;
 use tracing::error;
-use ethers::providers::Provider;
-use ethers::providers::Http;
 type DepositContract = DepositContractABI<Provider<Http>>;
 
 mod deposit_events;
@@ -19,7 +19,11 @@ pub struct Updater<T: EthSpec> {
 }
 
 impl<T: EthSpec> Updater<T> {
-    pub fn new(beacon: BeaconNodeHttpClient, pool: PgPool, deposit_contract: DepositContract) -> Self {
+    pub fn new(
+        beacon: BeaconNodeHttpClient,
+        pool: PgPool,
+        deposit_contract: DepositContract,
+    ) -> Self {
         Self {
             beacon,
             pool,
