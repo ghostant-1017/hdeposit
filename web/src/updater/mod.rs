@@ -15,6 +15,7 @@ pub struct Updater<T: EthSpec> {
     beacon: BeaconNodeHttpClient,
     pool: PgPool,
     deposit_contract: DepositContract,
+    start: u64,
     _p: PhantomData<T>,
 }
 
@@ -23,11 +24,13 @@ impl<T: EthSpec> Updater<T> {
         beacon: BeaconNodeHttpClient,
         pool: PgPool,
         deposit_contract: DepositContract,
+        start: u64
     ) -> Self {
         Self {
             beacon,
             pool,
             deposit_contract,
+            start,
             _p: Default::default(),
         }
     }

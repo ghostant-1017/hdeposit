@@ -25,6 +25,10 @@ pub struct Cli {
     /// Database url
     #[clap(long)]
     dsn: String,
+
+    /// Contract deployed slot
+    #[clap(long)]
+    start: u64,
 }
 
 impl Cli {
@@ -47,7 +51,7 @@ impl Cli {
             DepositContract::new(spec.deposit_contract_address, Arc::new(eth1_provider));
 
         let updater =
-            Updater::<MainnetEthSpec>::new(beacon.clone(), pool.clone(), deposit_contract);
+            Updater::<MainnetEthSpec>::new(beacon.clone(), pool.clone(), deposit_contract, self.start);
 
         let server = Server::new(pool, spec);
         tokio::spawn(async move { updater.run().await });

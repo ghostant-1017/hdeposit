@@ -14,10 +14,9 @@ impl<T: EthSpec> Updater<T> {
         let mut conn = self.pool.get().await?;
         let tx = conn.transaction().await?;
         // 1.Fetch last synced withdrawals slot
-        // let last_slot = select_sync_state(tx.client(), &SyncState::WithdrawalLastSlot).await?;
         let finalized_slot =
             select_sync_state(tx.client(), &SyncState::WithdrawalFinalizedSlot).await?;
-        let start = finalized_slot.unwrap_or_default();
+        let start = finalized_slot.unwrap_or(self.start);
 
         let validator_indexes: HashSet<_> = select_all_validators(tx.client())
             .await?
