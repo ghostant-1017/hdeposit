@@ -61,6 +61,9 @@ pub async fn get_logs_by_txhash(
         .at_block_hash(block_hash)
         .address(address.into())
         .query_with_meta()
-        .await?;
+        .await?
+        .into_iter()
+        .filter(|log| log.1.transaction_hash == txhash)
+        .collect();
     Ok(Some(logs))
 }
