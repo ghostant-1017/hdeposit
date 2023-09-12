@@ -4,7 +4,7 @@ use crate::{api::Server, logger, updater::Updater};
 use clap::Parser;
 use contract::deposit::DepositContract;
 use eth2::{
-    types::{ChainSpec, ConfigAndPreset, MainnetEthSpec},
+    types::{ChainSpec, ConfigAndPreset, MainnetEthSpec, MinimalEthSpec},
     BeaconNodeHttpClient, SensitiveUrl, Timeouts,
 };
 
@@ -44,7 +44,7 @@ impl Cli {
             .await
             .expect("get config from beacon")
             .data;
-        let spec = ChainSpec::from_config::<MainnetEthSpec>(config_and_preset.config())
+        let spec = ChainSpec::from_config::<MinimalEthSpec>(config_and_preset.config())
             .ok_or(anyhow::anyhow!("from config"))?;
         let pool = initial_pg_pool(self.dsn).await?;
         let deposit_contract =
