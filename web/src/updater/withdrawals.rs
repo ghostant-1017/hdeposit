@@ -36,6 +36,9 @@ impl<T: EthSpec> Updater<T> {
         info!("Update withdrawals from {start} to {end}");
         futures::stream::iter(start..=end).map(|slot| {
             async move {
+                if slot % 100 == 0 {
+                    info!("Update withdrawals current slot: {}", slot);
+                }
                 let block = get_beacon_block_by_slot::<T>(&self.beacon, slot).await;
                 block
             }
