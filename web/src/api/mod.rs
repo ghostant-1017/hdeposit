@@ -25,13 +25,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(pool: PgPool, spec: ChainSpec) -> Self {
-        info!("Spec: {:?}", spec);
-        let clock = slot_clock::SystemTimeSlotClock::new(
-            spec.genesis_slot,
-            Duration::from_secs(spec.min_genesis_time),
-            Duration::from_secs(spec.seconds_per_slot),
-        );
+    pub fn new(pool: PgPool, clock: SystemTimeSlotClock) -> Self {
         Self { pool, clock }
     }
 
