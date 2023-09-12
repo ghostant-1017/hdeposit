@@ -6,6 +6,7 @@ use storage::models::{select_validators_by_credentials, select_withdrawals_by_va
 
 // 365 * 24 * 3600 / 12 / 32
 const EPOCH_PER_YEAR: u64 = 82125;
+const SLOT_PER_EPOCH: u64 = 32;
 #[derive(Debug, Deserialize)]
 pub struct Params {
     wc: Hash256,
@@ -39,7 +40,7 @@ impl ValidatorInfo {
                 .into_iter()
                 .map(|w| w.amount)
                 .sum();
-            let cl_apr = Self::caculatue_arp(clock, validator_data.validator.activation_epoch.as_u64(), accumulative_protocol_reward).unwrap_or_default();
+            let cl_apr = Self::caculate_arp(clock, validator_data.validator.activation_epoch.as_u64(), accumulative_protocol_reward).unwrap_or_default();
             return Ok(Self {
                 index: validator.index,
                 balance: validator.amount,
@@ -51,8 +52,8 @@ impl ValidatorInfo {
         }
     } 
 
-    pub fn caculatue_arp(clock: &SystemTimeSlotClock, active_epoch: u64, accumulative_protocol_reward: u64) -> anyhow::Result<f64> {
-        let epoch_range = (clock.now().ok_or(anyhow!("clock error"))?.as_u64() / 12).saturating_sub(active_epoch);
+    pub fn caculate_arp(clock: &SystemTimeSlotClock, active_epoch: u64, accumulative_protocol_reward: u64) -> anyhow::Result<f64> {
+        let epoch_range = (clock.now().ok_or(anyhow!("clock error"))?.as_u64() / SLOT_PER_EPOCH).saturating_sub(active_epoch);
         info!("epoch range: {}", epoch_range);
         let arp: f64 = (accumulative_protocol_reward as f64 / epoch_range as f64 * EPOCH_PER_YEAR as f64 / 32_000_000_000.0) as f64;
         Ok(arp)
