@@ -1,3 +1,5 @@
+use crate::utils::{get_current_epoch, EPOCH_PER_YEAR, DEPOSIT_AMOUNT, caculate_arp};
+
 use super::*;
 use anyhow::anyhow;
 use bb8_postgres::tokio_postgres::Client;
@@ -5,8 +7,7 @@ use eth2::types::{Hash256, ValidatorData, ValidatorStatus};
 use storage::models::{select_validators_by_credentials, select_withdrawals_by_validator_index, HellmanValidator};
 
 // 365 * 24 * 3600 / 12 / 32
-const EPOCH_PER_YEAR: u64 = 82125;
-const SLOT_PER_EPOCH: u64 = 32;
+
 #[derive(Debug, Deserialize)]
 pub struct Params {
     wc: Hash256,
@@ -39,8 +40,9 @@ impl ValidatorInfo {
                 .await?
                 .into_iter()
                 .map(|w| w.amount)
+                .filter(|amount| *amount < DEPOSIT_AMOUNT)
                 .sum();
-            let cl_apr = Self::caculate_arp(clock, validator_data.validator.activation_epoch.as_u64(), accumulative_protocol_reward).unwrap_or_default();
+            let cl_apr = caculate_arp(clock, validator_data.validator.activation_epoch.as_u64(), accumulative_protocol_reward).unwrap_or_default();
             return Ok(Self {
                 index: validator.index,
                 balance: validator.amount,
@@ -51,15 +53,6 @@ impl ValidatorInfo {
             })
         }
     } 
-
-    pub fn caculate_arp(clock: &SystemTimeSlotClock, active_epoch: u64, accumulative_protocol_reward: u64) -> anyhow::Result<f64> {
-        let current_epoch = clock.now().ok_or(anyhow!("clock error"))?.as_u64() / SLOT_PER_EPOCH;
-        info!("current_epoch: {}", current_epoch);
-        let epoch_range = (clock.now().ok_or(anyhow!("clock error"))?.as_u64() / SLOT_PER_EPOCH).saturating_sub(active_epoch);
-        info!(?epoch_range, ?accumulative_protocol_reward, "caculate arp");
-        let arp: f64 = (accumulative_protocol_reward as f64 / epoch_range as f64 * EPOCH_PER_YEAR as f64 / 32_000_000_000.0) as f64;
-        Ok(arp)
-    }
 }
 
 pub async fn get_validators(
