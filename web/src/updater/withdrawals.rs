@@ -45,7 +45,7 @@ impl<T: EthSpec> Updater<T> {
         })
         .buffered(128)
         .for_each(|block| async {
-            if block.is_some() {
+            if block.is_none() {
                 return;
             }
             Self::insert_block_withdrawals(tx.client(), block.unwrap().data, &validator_indexes).await.unwrap();
