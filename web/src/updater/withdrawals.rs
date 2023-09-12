@@ -3,7 +3,8 @@ use std::collections::HashSet;
 use super::*;
 use anyhow::{anyhow, Result};
 use bb8_postgres::tokio_postgres::Client;
-use eth2::types::{BlockId, SignedBeaconBlock};
+use eth2::types::{BlockId, SignedBeaconBlock, fork_versioned_response::ExecutionOptimisticFinalizedForkVersionedResponse};
+use futures::StreamExt;
 use storage::models::{
     select_all_validators, select_sync_state, upsert_sync_state, upsert_withdrawals, SyncState,
 };
@@ -33,19 +34,32 @@ impl<T: EthSpec> Updater<T> {
         let end = current_finalized.data.slot().as_u64();
         // 3.Query [start,end] blocks
         info!("Update withdrawals from {start} to {end}");
-        for slot in start..=end {
-            info!("Update withdrawals current slot: {}", slot);
-            let block = match self
-                .beacon
-                .get_beacon_blocks(BlockId::Slot(slot.into()))
-                .await
-                .map_err(|err| anyhow!("{err}"))?{
-                    Some(block) => block,
-                    None => continue,
-                };
-            let block = block.data;
-            Self::insert_block_withdrawals(tx.client(), block, &validator_indexes).await?;
-        }
+        futures::stream::iter(start..=end).map(|slot| {
+            async move {
+                let block = get_beacon_block_by_slot::<T>(&self.beacon, slot).await;
+                block
+            }
+        })
+        .buffered(128)
+        .for_each(|block| async {
+            if block.is_some() {
+                return;
+            }
+            Self::insert_block_withdrawals(tx.client(), block.unwrap().data, &validator_indexes).await.unwrap();
+        }).await;
+        // for slot in start..=end {
+        //     info!("Update withdrawals current slot: {}", slot);
+        //     let block = match self
+        //         .beacon
+        //         .get_beacon_blocks(BlockId::Slot(slot.into()))
+        //         .await
+        //         .map_err(|err| anyhow!("{err}"))?{
+        //             Some(block) => block,
+        //             None => continue,
+        //         };
+        //     let block = block.data;
+        //     Self::insert_block_withdrawals(tx.client(), block, &validator_indexes).await?;
+        // }
 
         upsert_sync_state(
             tx.client(),
@@ -74,5 +88,23 @@ impl<T: EthSpec> Updater<T> {
             .collect();
         upsert_withdrawals(client, &withdrawals).await?;
         Ok(())
+    }
+}
+
+pub async fn get_beacon_block_by_slot<T: EthSpec>(client: &BeaconNodeHttpClient, slot: u64) -> Option<ExecutionOptimisticFinalizedForkVersionedResponse<SignedBeaconBlock<T>>>{
+    loop {
+        let result = client.get_beacon_blocks(BlockId::Slot(slot.into())).await;
+        match result {
+            Ok(data) => return data,
+            Err(_) => continue
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[tokio::test]
+    async fn test_load_slots() {
     }
 }
