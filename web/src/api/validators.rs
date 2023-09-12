@@ -54,7 +54,7 @@ impl ValidatorInfo {
     pub fn caculatue_arp(clock: &SystemTimeSlotClock, active_epoch: u64, accumulative_protocol_reward: u64) -> anyhow::Result<f64> {
         let epoch_range = (clock.now().ok_or(anyhow!("clock error"))?.as_u64() / 12).saturating_sub(active_epoch);
         info!("epoch range: {}", epoch_range);
-        let arp: f64 = (accumulative_protocol_reward / epoch_range * EPOCH_PER_YEAR / 32_000_000_000) as f64;
+        let arp: f64 = (accumulative_protocol_reward as f64 / epoch_range as f64 * EPOCH_PER_YEAR as f64 / 32_000_000_000.0) as f64;
         Ok(arp)
     }
 }
