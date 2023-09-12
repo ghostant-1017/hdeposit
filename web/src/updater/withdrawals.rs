@@ -35,13 +35,15 @@ impl<T: EthSpec> Updater<T> {
         info!("Update withdrawals from {start} to {end}");
         for slot in start..=end {
             info!("Update withdrawals current slot: {}", slot);
-            let block = self
+            let block = match self
                 .beacon
                 .get_beacon_blocks(BlockId::Slot(slot.into()))
                 .await
-                .map_err(|err| anyhow!("{err}"))?
-                .unwrap()
-                .data;
+                .map_err(|err| anyhow!("{err}"))?{
+                    Some(block) => block,
+                    None => continue,
+                };
+            let block = block.data;
             Self::insert_block_withdrawals(tx.client(), block, &validator_indexes).await?;
         }
 
