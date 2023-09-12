@@ -1,9 +1,36 @@
 use anyhow::{anyhow, Result};
-use bb8_postgres::tokio_postgres::Client;
+use bb8_postgres::tokio_postgres::{Client, Row};
 use contract::deposit::DepositEventFilter;
 use eth2::types::ValidatorData;
 use ethers::types::U64;
 use lighthouse_types::{Hash256, PublicKey};
+
+pub struct HellmanValidator {
+    pub index: u64,
+    pub pubkey: PublicKey,
+    pub withdrawal_credentials: Hash256,
+    pub amount: u64,
+    pub data: Option<ValidatorData>,
+}
+
+impl TryFrom<Row> for HellmanValidator {
+    type Error = anyhow::Error;
+
+    fn try_from(row: Row) -> Result<Self> {
+        let index: i64 = row.get("index");
+        let pubkey: String = row.get("pubkey");
+        let wc: String = row.get("withdrawal_credentials");
+        let amount: i64 = row.get("amount");
+        let data: serde_json::Value = row.get("data");
+        Ok(Self {
+            index: index as u64,
+            pubkey: serde_json::from_str(&pubkey)?,
+            withdrawal_credentials: serde_json::from_str(&wc)?,
+            amount: amount as u64,
+            data: serde_json::from_value(data)?,
+        })
+    }
+}
 
 pub async fn upsert_validators(client: &Client, validators: &Vec<ValidatorData>) -> Result<()> {
     let sql = "insert into hellman_validators(index,pubkey,withdrawal_credentials,amount,data) 
@@ -26,24 +53,22 @@ pub async fn upsert_validators(client: &Client, validators: &Vec<ValidatorData>)
 pub async fn select_validators_by_credentials(
     client: &Client,
     wc: Hash256,
-) -> Result<Vec<ValidatorData>> {
+) -> Result<Vec<HellmanValidator>> {
     let sql = "select * from hellman_validators where withdrawal_credentials = $1";
     let rows = client.query(sql, &[&serde_json::to_string(&wc)?]).await?;
     let mut result = vec![];
     for row in rows {
-        let data = serde_json::from_value(row.get("data"))?;
-        result.push(data);
+        result.push(row.try_into()?);
     }
     Ok(result)
 }
 
-pub async fn select_all_validators(client: &Client) -> Result<Vec<ValidatorData>> {
+pub async fn select_all_validators(client: &Client) -> Result<Vec<HellmanValidator>> {
     let sql = "select * from hellman_validators;";
     let rows = client.query(sql, &[]).await?;
     let mut result = vec![];
     for row in rows {
-        let data = serde_json::from_value(row.get("data"))?;
-        result.push(data);
+        result.push(row.try_into()?);
     }
     Ok(result)
 }
