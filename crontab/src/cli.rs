@@ -1,5 +1,5 @@
 use crate::{
-    eth2::new_eth2_client,
+    eth2::new_beacon_client,
     logger,
     service::{EventService, ProcessorService},
     storage::db::initial_pg_pool,
@@ -50,8 +50,8 @@ impl Cli {
         let wallet = inital_wallet_from_env().context("init local wallet fail")?;
         info!("Initializing db connection pool...");
         let pool = initial_pg_pool(self.dsn).await?;
-        let eth2_client = new_eth2_client(self.eth2_endpoint.as_str())?;
-        let config_and_preset: ConfigAndPreset = eth2_client
+        let beacon_client = new_beacon_client(self.eth2_endpoint.as_str())?;
+        let config_and_preset: ConfigAndPreset = beacon_client
             .get_config_spec()
             .await
             .expect("get config from beacon")
@@ -67,12 +67,12 @@ impl Cli {
         let contract = Vault::new(contract_addr, client);
         ensure!(self.batch <= 50, "Batch should less than 50");
         let evt_service = EventService::<MainnetEthSpec>::new(
-            eth2_client.clone(),
+            beacon_client.clone(),
             contract.clone(),
             pool.clone(),
         )?;
         let proc_service = ProcessorService::new(
-            eth2_client.clone(),
+            beacon_client.clone(),
             pool,
             &self.password,
             spec,
