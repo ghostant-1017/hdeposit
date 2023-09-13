@@ -1,7 +1,7 @@
 use crate::{
     eth2::{new_beacon_client, new_validator_client},
     logger,
-    service::{EventService, ProcessorService},
+    service::{EventService, ProcessorService, FeeManagerService},
     storage::db::initial_pg_pool,
     vault::Vault,
     wallet::inital_wallet_from_env,
@@ -87,13 +87,14 @@ impl Cli {
         )?;
         let proc_service = ProcessorService::new(
             beacon_client.clone(),
-            pool,
+            pool.clone(),
             &self.password,
             spec,
             contract,
             self.batch,
         );
-        run(self.start, evt_service, proc_service).await?;
+        let feemgr_service = FeeManagerService::new(validator_client, pool);
+        run(self.start, evt_service, proc_service, feemgr_service).await?;
         Ok(())
     }
 }
@@ -102,8 +103,10 @@ async fn run<T: EthSpec>(
     start: u64,
     evt_service: EventService<T>,
     proc_service: ProcessorService<T>,
+    feemgr_service: FeeManagerService
 ) -> Result<()> {
     proc_service.start_update_service()?;
+    feemgr_service.start_update_service()?;
     evt_service.start_update_service(start).await?;
     Ok(())
 }

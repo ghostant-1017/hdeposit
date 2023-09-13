@@ -58,6 +58,21 @@ pub async fn query_pending_deposit_data(client: &Client) -> Result<Vec<StoredDep
     Ok(result)
 }
 
+pub async fn query_deposit_data_by_evt_pk(client: &Client, evt_pk: i64) -> Result<Vec<StoredDepositData>> {
+    let rows = client
+        .query(
+            "select * from deposit_data where evt_pk = $1;",
+            &[&evt_pk],
+        )
+        .await?;
+    let mut result = vec![];
+    for row in rows {
+        result.push(row.try_into()?)
+    }
+    Ok(result)
+}
+
+
 pub async fn update_batch_deposit_data(
     client: &Client,
     batch: &Vec<StoredDepositData>,
