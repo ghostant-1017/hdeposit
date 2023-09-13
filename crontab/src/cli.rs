@@ -1,5 +1,4 @@
 use crate::{
-    config::PRATER_CONFIG,
     eth2::new_eth2_client,
     logger,
     service::{EventService, ProcessorService},
@@ -11,7 +10,7 @@ use anyhow::{anyhow, ensure, Context, Result};
 use clap::Parser;
 use ethers::prelude::SignerMiddleware;
 use ethers::types::Address;
-use lighthouse_types::{ChainSpec, Config, EthSpec, MainnetEthSpec};
+use lighthouse_types::{ChainSpec, EthSpec, MainnetEthSpec, ConfigAndPreset};
 use std::{str::FromStr, sync::Arc};
 use tracing::*;
 use url::Url;
@@ -40,12 +39,6 @@ pub struct Cli {
     #[clap(long)]
     password: String,
 
-    /// ChainID
-    /// mainnet: 0
-    /// geriol: 1
-    #[clap(long)]
-    chain_id: i8,
-
     #[clap(long, default_value = "1")]
     batch: u64,
 }
@@ -56,23 +49,23 @@ impl Cli {
         info!("Loading contract owner secret key from env[CONTRACT_OWNER_KEY]...");
         let wallet = inital_wallet_from_env().context("init local wallet fail")?;
         info!("Initializing db connection pool...");
-        let pool: bb8_postgres::bb8::Pool<
-            bb8_postgres::PostgresConnectionManager<bb8_postgres::tokio_postgres::NoTls>,
-        > = initial_pg_pool(self.dsn).await?;
+        let pool = initial_pg_pool(self.dsn).await?;
+        let eth2_client = new_eth2_client(self.eth2_endpoint.as_str())?;
+        let config_and_preset: ConfigAndPreset = eth2_client
+            .get_config_spec()
+            .await
+            .expect("get config from beacon")
+            .data;
+        let spec = ChainSpec::from_config::<MainnetEthSpec>(config_and_preset.config())
+            .ok_or(anyhow::anyhow!("from config"))?;
+        info!("Loaded config from beacon, config_name: {}", spec.config_name.as_ref().unwrap());
+
         let contract_addr =
             Address::from_str(&self.contract).context("parse contract address error")?;
         let provider = ethers::providers::Provider::try_from(self.eth1_endpoint.as_str())?;
         let client = Arc::new(SignerMiddleware::new_with_provider_chain(provider, wallet).await?);
         let contract = Vault::new(contract_addr, client);
-        let eth2_client = new_eth2_client(self.eth2_endpoint.as_str())?;
         ensure!(self.batch <= 50, "Batch should less than 50");
-        let spec = match self.chain_id {
-            0 => ChainSpec::mainnet(),
-            _ => {
-                let config: Config = serde_yaml::from_str(PRATER_CONFIG)?;
-                ChainSpec::from_config::<MainnetEthSpec>(&config).ok_or(anyhow!("from config"))?
-            }
-        };
         let evt_service = EventService::<MainnetEthSpec>::new(
             eth2_client.clone(),
             contract.clone(),

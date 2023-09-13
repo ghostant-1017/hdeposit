@@ -1,5 +1,5 @@
 pub mod cli;
-mod config;
+// mod config;
 mod eth1;
 mod eth2;
 mod logger;

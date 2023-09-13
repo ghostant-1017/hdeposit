@@ -19,7 +19,7 @@ pub async fn get_current_finality_block_number<T: EthSpec>(
         .get_beacon_blocks::<T>(BlockId::Finalized)
         .await
         .map_err(|err| anyhow!("{err}"))?
-        .unwrap();
+        .ok_or(anyhow!("block number not found"))?;
     let payload = block
         .data
         .message()
