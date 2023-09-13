@@ -1,5 +1,5 @@
 use crate::{
-    eth2::new_beacon_client,
+    eth2::{new_beacon_client, new_validator_client},
     logger,
     service::{EventService, ProcessorService},
     storage::db::initial_pg_pool,
@@ -21,7 +21,13 @@ pub struct Cli {
     eth1_endpoint: Url,
 
     #[clap(long)]
-    eth2_endpoint: Url,
+    beacon_endpoint: Url,
+
+    #[clap(long)]
+    validator_endpoint: Url,
+
+    #[clap(long)]
+    validator_secret: String,
 
     /// Contract address
     #[clap(long)]
@@ -48,9 +54,17 @@ impl Cli {
         logger::init(0);
         info!("Loading contract owner secret key from env[CONTRACT_OWNER_KEY]...");
         let wallet = inital_wallet_from_env().context("init local wallet fail")?;
+        
         info!("Initializing db connection pool...");
         let pool = initial_pg_pool(self.dsn).await?;
-        let beacon_client = new_beacon_client(self.eth2_endpoint.as_str())?;
+        
+        info!("Initializing beacon http client...");
+        let beacon_client = new_beacon_client(self.beacon_endpoint.as_str())?;
+        
+        info!("Initializing validator http client...");
+        let validator_client = new_validator_client(self.validator_endpoint.as_str(), self.validator_secret)?;
+
+        info!("Loading chain spec from beacon node...");
         let config_and_preset: ConfigAndPreset = beacon_client
             .get_config_spec()
             .await
