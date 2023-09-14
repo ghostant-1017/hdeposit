@@ -8,6 +8,7 @@ use futures::StreamExt;
 use storage::models::{
     select_all_validators, select_sync_state, upsert_sync_state, upsert_withdrawals, SyncState,
 };
+use tokio::sync::Mutex;
 use tracing::info;
 
 impl<T: EthSpec> Updater<T> {
@@ -34,6 +35,7 @@ impl<T: EthSpec> Updater<T> {
         let end = current_finalized.data.slot().as_u64();
         // 3.Query [start,end] blocks
         info!("Update withdrawals from {start} to {end}");
+        let err_ctx = Mutex::new(Option::default());
         futures::stream::iter(start..=end).map(|slot| {
             async move {
                 if slot % 100 == 0 {
@@ -48,22 +50,16 @@ impl<T: EthSpec> Updater<T> {
             if block.is_none() {
                 return;
             }
-            Self::insert_block_withdrawals(tx.client(), block.unwrap().data, &validator_indexes).await.unwrap();
+            let block = block.unwrap();
+            if let Err(err) = Self::insert_block_withdrawals(tx.client(), block.data.clone(), &validator_indexes).await {
+                *err_ctx.lock().await = Some(err);
+            }
         }).await;
-        // for slot in start..=end {
-        //     info!("Update withdrawals current slot: {}", slot);
-        //     let block = match self
-        //         .beacon
-        //         .get_beacon_blocks(BlockId::Slot(slot.into()))
-        //         .await
-        //         .map_err(|err| anyhow!("{err}"))?{
-        //             Some(block) => block,
-        //             None => continue,
-        //         };
-        //     let block = block.data;
-        //     Self::insert_block_withdrawals(tx.client(), block, &validator_indexes).await?;
-        // }
-
+    
+        if let Some(err) = err_ctx.lock().await.as_ref() {
+            error!("insert block withdrawals error: {}", err);
+            return Err(anyhow!("{}", err.to_string()))
+        }
         upsert_sync_state(
             tx.client(),
             &SyncState::WithdrawalFinalizedSlot,
@@ -99,7 +95,10 @@ pub async fn get_beacon_block_by_slot<T: EthSpec>(client: &BeaconNodeHttpClient,
         let result = client.get_beacon_blocks(BlockId::Slot(slot.into())).await;
         match result {
             Ok(data) => return data,
-            Err(_) => continue
+            Err(err) => {
+                error!("get beacon blocks error: {}", err);
+                continue;
+            }
         }
     }
 }
