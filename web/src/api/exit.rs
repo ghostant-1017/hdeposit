@@ -3,10 +3,12 @@ use eth2::{
     types::{Keypair, SignedVoluntaryExit, ValidatorStatus, VoluntaryExit},
     BeaconNodeHttpClient,
 };
-use ethers::types::{Address, Signature};
+use ethers::types::{Address, Signature, Sign};
+use serde::de;
 use storage::models::{
     insert_exit_message, query_keystore_by_public_key, select_validator_by_index,
 };
+use std::str::FromStr;
 
 use crate::utils::get_current_epoch;
 
@@ -20,10 +22,22 @@ impl ToString for ExitMessage {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct Params {
     validator_index: u64,
     signature: Signature,
+}
+impl<'a> Deserialize<'a> for Params {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'a> 
+    {
+        let mut m_result = serde_json::Value::deserialize(deserializer)?;
+
+        let validator_index: u64 = serde_json::from_value(m_result["validator_index"].take()).map_err(de::Error::custom)?;
+        let signature: Signature = Signature::from_str(&m_result["signature"].take().to_string()).map_err(de::Error::custom)?;
+        Ok(Self { validator_index, signature })
+    }
 }
 
 #[derive(Debug, Serialize)]
