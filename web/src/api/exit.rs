@@ -35,7 +35,7 @@ impl<'a> Deserialize<'a> for Params {
         let mut m_result = serde_json::Value::deserialize(deserializer)?;
 
         let validator_index: u64 = serde_json::from_value(m_result["validator_index"].take()).map_err(de::Error::custom)?;
-        let signature: Signature = Signature::from_str(&m_result["signature"].take().to_string()).map_err(de::Error::custom)?;
+        let signature: Signature = Signature::from_str(&m_result["signature"].take().as_str().ok_or(de::Error::custom("signature missing"))?).map_err(de::Error::custom)?;
         Ok(Self { validator_index, signature })
     }
 }
@@ -73,7 +73,9 @@ pub async fn post_exit(
         .map_err(|_| anyhow!("Signature verify error"))?;
 
     // 3. Prepare to generate `VoluntaryExit`
-    let keystore = query_keystore_by_public_key(&db, &serde_json::to_string(&validator.pubkey)?)
+    let pubkey = validator.pubkey.as_hex_string();
+    let (_, pubkey) = pubkey.split_at(2);
+    let keystore = query_keystore_by_public_key(&db, pubkey)
         .await?
         .ok_or(anyhow!("Keystore not found"))?;
     let keypair = keystore

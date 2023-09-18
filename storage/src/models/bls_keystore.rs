@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use super::*;
 use bb8_postgres::tokio_postgres::{Client, Row};
 use eth2_keystore::Keystore;
