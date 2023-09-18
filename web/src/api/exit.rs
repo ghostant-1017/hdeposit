@@ -3,7 +3,7 @@ use eth2::{
     types::{Keypair, SignedVoluntaryExit, ValidatorStatus, VoluntaryExit},
     BeaconNodeHttpClient,
 };
-use ethers::types::{Address, Signature, Sign};
+use ethers::types::{Address, Signature};
 use serde::de;
 use storage::models::{
     insert_exit_message, query_keystore_by_public_key, select_validator_by_index,
@@ -40,13 +40,10 @@ impl<'a> Deserialize<'a> for Params {
     }
 }
 
-#[derive(Debug, Serialize)]
-pub struct Response;
-
 pub async fn post_exit(
     State(server): State<Server>,
     Json(params): Json<Params>,
-) -> Result<Json<Response>, AppError> {
+) -> Result<Json<()>, AppError> {
     let db = server.pool.get().await?;
 
     // 1. Select the validator index related `HellmanValidator`
@@ -107,7 +104,7 @@ pub async fn post_exit(
         .await
         .map_err(|err| anyhow!("Broadcast voluntary exit to beacon err: {err}"))?;
 
-    Ok(Json(Response {}))
+    Ok(Json(()))
 }
 
 pub async fn generate_signed_voluntary_exit(
