@@ -68,3 +68,15 @@ pub async fn query_used_keystore(client: &Client) -> Result<Vec<StoredKeyStore>>
     }
     Ok(result)
 }
+
+pub async fn query_keystore_by_public_key(
+    client: &Client,
+    pubkey: &str,
+) -> Result<Option<StoredKeyStore>> {
+    let sql = "select * from bls_keystore where keystore->>'pubkey' = $1";
+    let result = client.query_opt(sql, &[&pubkey]).await?;
+    match result {
+        Some(row) => Ok(Some(row.try_into()?)),
+        None => Ok(None),
+    }
+}

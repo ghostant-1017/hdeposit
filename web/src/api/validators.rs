@@ -1,10 +1,12 @@
-use crate::utils::{get_current_epoch, EPOCH_PER_YEAR, DEPOSIT_AMOUNT, caculate_arp};
+use crate::utils::{caculate_arp, get_current_epoch, DEPOSIT_AMOUNT, EPOCH_PER_YEAR};
 
 use super::*;
 use anyhow::anyhow;
 use bb8_postgres::tokio_postgres::Client;
 use eth2::types::{Hash256, ValidatorData, ValidatorStatus};
-use storage::models::{select_validators_by_credentials, select_withdrawals_by_validator_index, HellmanValidator};
+use storage::models::{
+    select_validators_by_credentials, select_withdrawals_by_validator_index, HellmanValidator,
+};
 
 // 365 * 24 * 3600 / 12 / 32
 
@@ -24,7 +26,11 @@ pub struct ValidatorInfo {
 }
 
 impl ValidatorInfo {
-    pub async fn new(client: &Client, validator: HellmanValidator, clock: &SystemTimeSlotClock) -> anyhow::Result<Self> {
+    pub async fn new(
+        client: &Client,
+        validator: HellmanValidator,
+        clock: &SystemTimeSlotClock,
+    ) -> anyhow::Result<Self> {
         if validator.data.as_ref().is_none() {
             return Ok(Self {
                 index: validator.index,
@@ -32,27 +38,33 @@ impl ValidatorInfo {
                 status: ValidatorStatus::Pending,
                 accumulative_protocol_reward: 0,
                 cl_apr: 0.0,
-                validator_data: None
-            })
-        }else {
+                validator_data: None,
+            });
+        } else {
             let validator_data = validator.data.unwrap();
-            let accumulative_protocol_reward: u64 = select_withdrawals_by_validator_index(client, validator.index)
-                .await?
-                .into_iter()
-                .map(|w| w.amount)
-                .filter(|amount| *amount < DEPOSIT_AMOUNT)
-                .sum();
-            let cl_apr = caculate_arp(clock, validator_data.validator.activation_epoch.as_u64(), accumulative_protocol_reward).unwrap_or_default();
+            let accumulative_protocol_reward: u64 =
+                select_withdrawals_by_validator_index(client, validator.index)
+                    .await?
+                    .into_iter()
+                    .map(|w| w.amount)
+                    .filter(|amount| *amount < DEPOSIT_AMOUNT)
+                    .sum();
+            let cl_apr = caculate_arp(
+                clock,
+                validator_data.validator.activation_epoch.as_u64(),
+                accumulative_protocol_reward,
+            )
+            .unwrap_or_default();
             return Ok(Self {
                 index: validator.index,
                 balance: validator.amount,
                 status: validator_data.status.superstatus(),
                 accumulative_protocol_reward,
                 cl_apr,
-                validator_data: Some(validator_data)
-            })
+                validator_data: Some(validator_data),
+            });
         }
-    } 
+    }
 }
 
 pub async fn get_validators(

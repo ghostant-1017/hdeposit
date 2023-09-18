@@ -19,3 +19,11 @@ CREATE TABLE withdrawals (
 );
 
 CREATE INDEX validators_wc_idx ON hellman_validators(withdrawal_credentials);
+
+CREATE TABLE exit_messages(
+    pk BIGSERIAL PRIMARY KEY,
+    validator_index BIGINT UNIQUE NOT NULL,
+    raw_message VARCHAR NOT NULL,
+    signature VARCHAR NOT NULL,
+    created_time timestamptz default now()
+)

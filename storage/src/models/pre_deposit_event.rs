@@ -71,7 +71,8 @@ pub async fn query_unflattened_events(client: &Client) -> Result<Vec<StoredPreDe
 
 pub async fn query_all_events(client: &Client) -> Result<Vec<StoredPreDepositEvt>> {
     let rows = client
-    .query("select * from pre_deposit_events;",&[]).await?;
+        .query("select * from pre_deposit_events;", &[])
+        .await?;
     let mut result = vec![];
     for row in rows {
         let evt = row.try_into()?;
@@ -89,4 +90,3 @@ pub async fn update_events_to_flattened(client: &Client, pk: i64) -> Result<u64>
         .await?;
     Ok(result)
 }
-

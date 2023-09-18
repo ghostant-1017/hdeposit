@@ -24,7 +24,7 @@ impl<T: EthSpec> Updater<T> {
         beacon: BeaconNodeHttpClient,
         pool: PgPool,
         deposit_contract: DepositContract,
-        start: u64
+        start: u64,
     ) -> Self {
         Self {
             beacon,

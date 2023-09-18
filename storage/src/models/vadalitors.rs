@@ -99,3 +99,15 @@ pub async fn upsert_validators_by_logs(
     }
     Ok(())
 }
+
+pub async fn select_validator_by_index(
+    client: &Client,
+    validator_index: u64,
+) -> Result<Option<HellmanValidator>> {
+    let sql = "select * from hellman_validators where index = $1";
+    let result = client.query_opt(sql, &[&(validator_index as i64)]).await?;
+    match result {
+        Some(row) => Ok(Some(row.try_into()?)),
+        None => Ok(None),
+    }
+}

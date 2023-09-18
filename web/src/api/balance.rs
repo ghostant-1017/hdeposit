@@ -1,4 +1,4 @@
-use crate::utils::{DEPOSIT_AMOUNT, caculate_arp};
+use crate::utils::{caculate_arp, DEPOSIT_AMOUNT};
 
 use super::*;
 use eth2::types::Hash256;
@@ -17,7 +17,7 @@ pub struct Response {
 
     pub accumulative_protocol_reward: i64,
     pub accumulative_fee_reward: i64,
-    
+
     pub cl_arp: f64,
 }
 
@@ -39,18 +39,23 @@ pub async fn get_balance(
         total_balance += validator.amount as i64;
         if validator.data.is_some() {
             let data = validator.data.unwrap();
-            pending_protocol_balance += data.balance as i64 - (data.validator.effective_balance as i64);
+            pending_protocol_balance +=
+                data.balance as i64 - (data.validator.effective_balance as i64);
             effective_balance += data.validator.effective_balance as i64;
             let protocol_reward = select_withdrawals_by_validator_index(&conn, validator.index)
-            .await?
-            .into_iter()
-            .map(|w| w.amount as i64)
-            .filter(|amount| *amount < DEPOSIT_AMOUNT as i64)
-            .sum::<i64>();
+                .await?
+                .into_iter()
+                .map(|w| w.amount as i64)
+                .filter(|amount| *amount < DEPOSIT_AMOUNT as i64)
+                .sum::<i64>();
             accumulative_protocol_reward += protocol_reward;
-            let arp = caculate_arp(&server.clock, data.validator.activation_epoch.as_u64(), protocol_reward as u64)?;
+            let arp = caculate_arp(
+                &server.clock,
+                data.validator.activation_epoch.as_u64(),
+                protocol_reward as u64,
+            )?;
             cl_arps.push(arp);
-        }else {
+        } else {
             effective_balance += validator.amount as i64;
         }
     }

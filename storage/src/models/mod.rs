@@ -12,6 +12,8 @@ mod withdrawals;
 pub use withdrawals::*;
 mod sync_states;
 pub use sync_states::*;
+mod exit_messages;
+pub use exit_messages::*;
 
 use anyhow::{anyhow, Result};
 use contract::vault::PreDepositFilter;

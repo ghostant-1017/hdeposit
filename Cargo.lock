@@ -7705,6 +7705,7 @@ dependencies = [
  "eth2",
  "ethers",
  "futures",
+ "hex",
  "serde",
  "serde_json",
  "serde_yaml 0.9.25",

@@ -1,7 +1,7 @@
 use crate::{
     eth2::{new_beacon_client, new_validator_client},
     logger,
-    service::{EventService, ProcessorService, FeeManagerService},
+    service::{EventService, FeeManagerService, ProcessorService},
     storage::db::initial_pg_pool,
     vault::Vault,
     wallet::inital_wallet_from_env,
@@ -10,7 +10,7 @@ use anyhow::{anyhow, ensure, Context, Result};
 use clap::Parser;
 use ethers::prelude::SignerMiddleware;
 use ethers::types::Address;
-use lighthouse_types::{ChainSpec, EthSpec, MainnetEthSpec, ConfigAndPreset};
+use lighthouse_types::{ChainSpec, ConfigAndPreset, EthSpec, MainnetEthSpec};
 use std::{str::FromStr, sync::Arc};
 use tracing::*;
 use url::Url;
@@ -54,15 +54,16 @@ impl Cli {
         logger::init(0);
         info!("Loading contract owner secret key from env[CONTRACT_OWNER_KEY]...");
         let wallet = inital_wallet_from_env().context("init local wallet fail")?;
-        
+
         info!("Initializing db connection pool...");
         let pool = initial_pg_pool(self.dsn).await?;
-        
+
         info!("Initializing beacon http client...");
         let beacon_client = new_beacon_client(self.beacon_endpoint.as_str())?;
-        
+
         info!("Initializing validator http client...");
-        let validator_client = new_validator_client(self.validator_endpoint.as_str(), self.validator_secret)?;
+        let validator_client =
+            new_validator_client(self.validator_endpoint.as_str(), self.validator_secret)?;
 
         info!("Loading chain spec from beacon node...");
         let config_and_preset: ConfigAndPreset = beacon_client
@@ -72,7 +73,10 @@ impl Cli {
             .data;
         let spec = ChainSpec::from_config::<MainnetEthSpec>(config_and_preset.config())
             .ok_or(anyhow::anyhow!("from config"))?;
-        info!("Loaded config from beacon, config_name: {}", spec.config_name.as_ref().unwrap());
+        info!(
+            "Loaded config from beacon, config_name: {}",
+            spec.config_name.as_ref().unwrap()
+        );
 
         let contract_addr =
             Address::from_str(&self.contract).context("parse contract address error")?;
@@ -103,7 +107,7 @@ async fn run<T: EthSpec>(
     start: u64,
     evt_service: EventService<T>,
     proc_service: ProcessorService<T>,
-    feemgr_service: FeeManagerService
+    feemgr_service: FeeManagerService,
 ) -> Result<()> {
     proc_service.start_update_service()?;
     feemgr_service.start_update_service()?;
