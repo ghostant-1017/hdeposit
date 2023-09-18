@@ -2,18 +2,19 @@ use anyhow::Result;
 use bb8_postgres::tokio_postgres::{Client, Row};
 use lighthouse_types::{Address, Withdrawal};
 
-pub async fn upsert_withdrawals(client: &Client, withdrawals: &Vec<Withdrawal>) -> Result<()> {
+pub async fn upsert_withdrawals(client: &Client, withdrawals: &Vec<Withdrawal>, slot: i64) -> Result<()> {
     for withdrawal in withdrawals {
         client
             .execute(
-                "insert into withdrawals (index, validator_index, address, amount) values ($1, $2, $3, $4)
+                "insert into withdrawals (index, validator_index, address, amount, slot) values ($1, $2, $3, $4, $5)
                     on conflict (index) do update 
-                set validator_index = $2, address = $3, amount = $4;",
+                set validator_index = $2, address = $3, amount = $4, slot = $5;",
                 &[
                     &(withdrawal.index as i64),
                     &(withdrawal.validator_index as i64),
                     &(serde_json::to_string(&withdrawal.address))?,
-                    &(withdrawal.amount as i64)
+                    &(withdrawal.amount as i64),
+                    &slot
                 ],
             )
             .await?;

@@ -83,9 +83,9 @@ impl<T: EthSpec> Updater<T> {
         block: SignedBeaconBlock<T>,
         validator_indexes: &HashSet<u64>,
     ) -> Result<()> {
+        let block = block.message_capella().unwrap();
+        let slot = block.slot.as_u64() as i64;
         let withdrawals = block
-            .message_capella()
-            .unwrap()
             .body
             .execution_payload
             .execution_payload
@@ -94,7 +94,7 @@ impl<T: EthSpec> Updater<T> {
             .into_iter()
             .filter(|withdrawal| validator_indexes.contains(&withdrawal.validator_index))
             .collect();
-        upsert_withdrawals(client, &withdrawals).await?;
+        upsert_withdrawals(client, &withdrawals, slot).await?;
         Ok(())
     }
 }

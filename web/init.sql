@@ -11,14 +11,16 @@ CREATE TABLE hellman_validators (
     data JSON
 );
 
+CREATE INDEX validators_wc_idx ON hellman_validators(withdrawal_credentials);
+
 CREATE TABLE withdrawals (
     index BIGINT PRIMARY KEY,
     validator_index BIGINT NOT NULL,
     address VARCHAR NOT NULL,
-    amount BIGINT NOT NULL
+    amount BIGINT NOT NULL,
+    slot BIGINT NOT NULL
 );
-
-CREATE INDEX validators_wc_idx ON hellman_validators(withdrawal_credentials);
+CREATE INDEX withdrawals_slot_idx on withdrawals(slot);
 
 CREATE TABLE exit_messages(
     pk BIGSERIAL PRIMARY KEY,
