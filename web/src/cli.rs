@@ -33,6 +33,7 @@ pub struct Cli {
     start: u64,
 
     /// Keystore Password
+    #[clap(long)]
     password: String,
 }
 
