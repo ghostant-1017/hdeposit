@@ -2,7 +2,8 @@ use crate::utils::{caculate_arp, DEPOSIT_AMOUNT};
 
 use super::*;
 use eth2::types::Hash256;
-use storage::models::{select_validators_by_credentials, select_withdrawals_by_validator_index};
+use ethers::types::Address;
+use storage::models::{select_validators_by_credentials, select_withdrawals_by_validator_index, query_el_fee_address};
 
 #[derive(Debug, Deserialize)]
 pub struct Params {
@@ -19,6 +20,7 @@ pub struct Response {
     pub accumulative_fee_reward: i64,
 
     pub cl_arp: f64,
+    pub el_fee_address: Option<Address>
 }
 
 pub async fn get_balance(
@@ -27,6 +29,7 @@ pub async fn get_balance(
 ) -> Result<Json<Response>, AppError> {
     info!("Query wallet: {}", params.wc);
     let conn = server.pool.get().await?;
+    let el_fee_address = query_el_fee_address(&conn, &params.wc).await?;
     let validators = select_validators_by_credentials(&conn, params.wc).await?;
     let mut total_balance = 0;
     let mut effective_balance = 0;
@@ -69,5 +72,6 @@ pub async fn get_balance(
         accumulative_protocol_reward,
         accumulative_fee_reward,
         cl_arp,
+        el_fee_address
     }))
 }

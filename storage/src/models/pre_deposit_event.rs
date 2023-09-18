@@ -1,7 +1,9 @@
+
 use super::*;
 
 use bb8_postgres::tokio_postgres::{Client, Row};
-use ethers::prelude::LogMeta;
+use ethers::{prelude::LogMeta, types::Address};
+use lighthouse_types::Hash256;
 
 pub struct StoredPreDepositEvt {
     pub pk: i64,
@@ -89,4 +91,16 @@ pub async fn update_events_to_flattened(client: &Client, pk: i64) -> Result<u64>
         )
         .await?;
     Ok(result)
+}
+
+pub async fn query_el_fee_address(client: &Client, wc: &Hash256) -> Result<Option<Address>> {
+    let sql = "select * from pre_deposit_events where pre_deposit_filter->>'withdrawal_credential' = $1 and pre_deposit_filter->>'create_el_fee' = 'true' limit 1;";
+    let result = client.query_opt(sql, &[&serde_json::to_string(wc)?]).await?;
+    let stored_evt: StoredPreDepositEvt = match result {
+        Some(row) => {
+            row.try_into()?
+        },
+        None => return Ok(None)
+    };
+    Ok(Some(stored_evt.log.el_fee_contract))
 }
