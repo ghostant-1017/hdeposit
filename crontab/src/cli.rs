@@ -6,7 +6,7 @@ use crate::{
     vault::Vault,
     wallet::inital_wallet_from_env,
 };
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{ensure, Context, Result};
 use clap::Parser;
 use ethers::prelude::SignerMiddleware;
 use ethers::types::Address;

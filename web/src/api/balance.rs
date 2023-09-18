@@ -32,7 +32,7 @@ pub async fn get_balance(
     let mut effective_balance = 0;
     let mut pending_protocol_balance = 0;
     let mut accumulative_protocol_reward = 0;
-    let mut accumulative_fee_reward = 0;
+    let accumulative_fee_reward = 0;
     let mut cl_arps = vec![];
     let mut cl_arp = 0.0;
     for validator in validators {
@@ -59,7 +59,7 @@ pub async fn get_balance(
             effective_balance += validator.amount as i64;
         }
     }
-    if cl_arps.len() != 0 {
+    if !cl_arps.is_empty() {
         cl_arp = cl_arps.iter().sum::<f64>() / cl_arps.len() as f64;
     }
     Ok(Json(Response {

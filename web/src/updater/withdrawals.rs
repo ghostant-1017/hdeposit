@@ -44,8 +44,8 @@ impl<T: EthSpec> Updater<T> {
                 if slot % 100 == 0 {
                     info!("Update withdrawals current slot: {}", slot);
                 }
-                let block = get_beacon_block_by_slot::<T>(&self.beacon, slot).await;
-                block
+
+                get_beacon_block_by_slot::<T>(&self.beacon, slot).await
             })
             .buffered(128)
             .for_each(|block| async {

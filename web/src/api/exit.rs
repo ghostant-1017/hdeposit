@@ -64,7 +64,7 @@ pub async fn post_exit(
         .ok_or(anyhow!("Keystore not found"))?;
     let keypair = keystore
         .keystore
-        .decrypt_keypair(&server.password.as_bytes())
+        .decrypt_keypair(server.password.as_bytes())
         .map_err(|_| anyhow!("KeyPass error"))?;
 
     // 4. Insert into db and broadcast
@@ -119,7 +119,7 @@ pub async fn generate_signed_voluntary_exit(
         genesis_data.genesis_validators_root,
         spec,
     );
-    return Ok(signed);
+    Ok(signed)
 }
 
 #[cfg(test)]

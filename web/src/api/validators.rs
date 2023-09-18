@@ -1,7 +1,7 @@
-use crate::utils::{caculate_arp, get_current_epoch, DEPOSIT_AMOUNT, EPOCH_PER_YEAR};
+use crate::utils::{caculate_arp, DEPOSIT_AMOUNT};
 
 use super::*;
-use anyhow::anyhow;
+
 use bb8_postgres::tokio_postgres::Client;
 use eth2::types::{Hash256, ValidatorData, ValidatorStatus};
 use storage::models::{
@@ -32,14 +32,14 @@ impl ValidatorInfo {
         clock: &SystemTimeSlotClock,
     ) -> anyhow::Result<Self> {
         if validator.data.as_ref().is_none() {
-            return Ok(Self {
+            Ok(Self {
                 index: validator.index,
                 balance: validator.amount,
                 status: ValidatorStatus::Pending,
                 accumulative_protocol_reward: 0,
                 cl_apr: 0.0,
                 validator_data: None,
-            });
+            })
         } else {
             let validator_data = validator.data.unwrap();
             let accumulative_protocol_reward: u64 =
@@ -55,14 +55,14 @@ impl ValidatorInfo {
                 accumulative_protocol_reward,
             )
             .unwrap_or_default();
-            return Ok(Self {
+            Ok(Self {
                 index: validator.index,
                 balance: validator.amount,
                 status: validator_data.status.superstatus(),
                 accumulative_protocol_reward,
                 cl_apr,
                 validator_data: Some(validator_data),
-            });
+            })
         }
     }
 }

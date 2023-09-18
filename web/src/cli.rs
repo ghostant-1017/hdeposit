@@ -5,7 +5,7 @@ use anyhow::anyhow;
 use clap::Parser;
 use contract::deposit::DepositContract;
 use eth2::{
-    types::{ChainSpec, ConfigAndPreset, MainnetEthSpec, MinimalEthSpec},
+    types::{ChainSpec, ConfigAndPreset, MainnetEthSpec},
     BeaconNodeHttpClient, SensitiveUrl, Timeouts,
 };
 

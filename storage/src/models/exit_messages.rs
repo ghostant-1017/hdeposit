@@ -1,6 +1,6 @@
 use bb8_postgres::tokio_postgres::Client;
 use ethers::types::Signature as Eth1Signature;
-use lighthouse_types::{signed_voluntary_exit, SignedVoluntaryExit};
+use lighthouse_types::SignedVoluntaryExit;
 
 // pub struct StoredExitMessage {
 //     pk: i64,
@@ -19,7 +19,7 @@ pub async fn insert_exit_message(
     let sql = "insert into exit_messages(validator_index, user_message, user_signature, signed_voluntary_exit) 
         values($1, $2, $3, $4) on conflict(validator_index) do nothing;";
     let user_signature = serde_json::to_string(&user_signature)?;
-    let signed_voluntary_exit = serde_json::to_value(&signed_voluntary_exit)?;
+    let signed_voluntary_exit = serde_json::to_value(signed_voluntary_exit)?;
     let result = client
         .execute(
             sql,
