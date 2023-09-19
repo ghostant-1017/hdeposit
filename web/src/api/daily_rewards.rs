@@ -1,8 +1,9 @@
-use std::{time::Duration, collections::HashMap};
+use std::time::Duration;
 
 use anyhow::anyhow;
 use chrono::{NaiveDateTime, Days};
 use eth2::types::Hash256;
+use indexmap::IndexMap;
 use slot_clock::Slot;
 use storage::models::select_withdrawals_by_wc_range;
 
@@ -18,7 +19,7 @@ pub struct Params {
 
 #[derive(Debug, Serialize)]
 pub struct Response {
-    pub data: HashMap<NaiveDateTime, u64>,
+    pub data: IndexMap<NaiveDateTime, u64>,
 }
 
 pub async fn get_daily_rewards_7days(
@@ -36,7 +37,7 @@ pub async fn get_daily_rewards_7days(
     
     let clock = server.clock;
     // 1. Initialize HashMap: Date -> amount
-    let mut result = HashMap::<NaiveDateTime, u64>::new();
+    let mut result = IndexMap::<NaiveDateTime, u64>::new();
     for i in 1..=7 {
         let day = today.checked_sub_days(Days::new(i)).ok_or(anyhow!("sub error"))?;
         result.insert(day, 0);
