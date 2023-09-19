@@ -10,6 +10,7 @@ mod balance;
 mod err;
 mod exit;
 mod validators;
+mod daily_rewards;
 use err::*;
 use slot_clock::SlotClock;
 use slot_clock::SystemTimeSlotClock;
@@ -17,6 +18,7 @@ use storage::db::PgPool;
 use tracing::info;
 
 use crate::api::balance::get_balance;
+use crate::api::daily_rewards::get_daily_rewards_7days;
 use crate::api::exit::post_exit;
 
 use self::validators::get_validators;
@@ -52,6 +54,7 @@ impl Server {
             .route("/api/v1/exit", post(post_exit))
             .route("/api/v1/validators", get(get_validators))
             .route("/api/v1/balance", get(get_balance))
+            .route("api/v1/daily_rewards", get(get_daily_rewards_7days))
             .with_state(self);
         info!("Server start at: {}", addr);
         axum::Server::bind(&addr)

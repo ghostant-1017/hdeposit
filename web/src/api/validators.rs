@@ -46,7 +46,7 @@ impl ValidatorInfo {
                 select_withdrawals_by_validator_index(client, validator.index)
                     .await?
                     .into_iter()
-                    .map(|w| w.amount)
+                    .map(|w| w.withdrawal.amount)
                     .filter(|amount| *amount < DEPOSIT_AMOUNT)
                     .sum();
             let cl_apr = caculate_arp(

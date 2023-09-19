@@ -48,7 +48,7 @@ pub async fn get_balance(
             let protocol_reward = select_withdrawals_by_validator_index(&conn, validator.index)
                 .await?
                 .into_iter()
-                .map(|w| w.amount as i64)
+                .map(|w| w.withdrawal.amount as i64)
                 .filter(|amount| *amount < DEPOSIT_AMOUNT as i64)
                 .sum::<i64>();
             accumulative_protocol_reward += protocol_reward;
