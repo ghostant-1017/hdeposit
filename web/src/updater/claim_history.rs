@@ -9,9 +9,11 @@ use ethers::prelude::LogMeta;
 use eth2::types::BlockId;
 use ethers::types::Address;
 use storage::models::insert_claim;
+use storage::models::query_contract_deployed_block_number;
 use storage::models::upsert_sync_state;
 use storage::models::{query_all_el_fee_contract, select_sync_state, SyncState};
 use tracing::info;
+use tracing::warn;
 
 impl<T: EthSpec> Updater<T> {
     pub async fn update_claim_history(&self) -> Result<()> {
@@ -28,9 +30,18 @@ impl<T: EthSpec> Updater<T> {
                 continue;
             }
             let tx = db.transaction().await?;
-            let from = select_sync_state(tx.client(), &SyncState::ContractLogs(el_fee_address))
-                .await?
-                .unwrap_or(self.start);
+            let from = match select_sync_state(tx.client(), &SyncState::ContractLogs(el_fee_address)).await? {
+                    Some(from) => from,
+                    None => {
+                        let block_number = query_contract_deployed_block_number(tx.client(), el_fee_address).await?;
+                        if block_number.is_none() {
+                            warn!("Cannot find el fee contract deploy number: {}", el_fee_address);
+                            continue;
+                        }
+                        block_number.unwrap()
+                    }
+                };
+
             if from == to {
                 continue;
             }

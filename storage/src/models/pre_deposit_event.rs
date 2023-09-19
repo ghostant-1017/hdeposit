@@ -115,3 +115,16 @@ pub async fn query_all_el_fee_contract(client: &Client) -> Result<Vec<Address>> 
     }
     Ok(result)
 }
+
+pub async fn query_contract_deployed_block_number(client: &Client, address: Address) -> Result<Option<u64>> {
+    let sql = "select * from pre_deposit_events where pre_deposit_filter->>'el_fee_contract' = $1 order by pk asc limit 1;";
+    let address = serde_json::to_string(&address)?;
+    let address = address.trim_matches('"');
+    let row = client.query_opt(sql, &[&address]).await?;
+    let row = match row {
+        Some(row) => row,
+        None => return Ok(None)
+    };
+    let evt: StoredPreDepositEvt = row.try_into()?;
+    Ok(Some(evt.meta.block_number.as_u64()))
+}
