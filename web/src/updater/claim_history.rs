@@ -45,6 +45,7 @@ impl<T: EthSpec> Updater<T> {
                 &(to as i64),
             )
             .await?;
+            tx.commit().await?;
         }
         Ok(())
     }
@@ -55,6 +56,7 @@ pub async fn query_logs_batch(contract: ELFee<Provider<Http>>, from: u64, to: u6
     for i in (from..=to).step_by(10000) {
         let current_from = i;
         let current_to = (i + 10000).min(to);
+        info!("Query split fee logs from {current_from} to {current_to}");
         let logs = contract
         .split_fee_filter()
         .address(el_fee_address.into())
