@@ -14,6 +14,8 @@ mod sync_states;
 pub use sync_states::*;
 mod exit_messages;
 pub use exit_messages::*;
+mod claim_history;
+pub use claim_history::*;
 
 use anyhow::{anyhow, Result};
 use contract::vault::PreDepositFilter;

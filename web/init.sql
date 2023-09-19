@@ -30,3 +30,10 @@ CREATE TABLE exit_messages(
     signed_voluntary_exit JSON  NOT NULL,
     created_time timestamptz default now()
 )
+
+CREATE TABLE claim_history(
+    pk BIGSERIAL PRIMARY KEY,
+    el_fee_contract VARCHAR NOT NULL,
+    log JSON NOT NULL,
+    meta JSON NOT NULL
+)

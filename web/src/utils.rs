@@ -5,22 +5,6 @@ use slot_clock::{SlotClock, SystemTimeSlotClock};
 pub const EPOCH_PER_YEAR: u64 = 82125;
 pub const SLOT_PER_EPOCH: u64 = 32;
 pub const DEPOSIT_AMOUNT: u64 = 32_000_000_000;
-pub fn rust_file_generation() -> Result<()> {
-    let abi_source = "../contract/abi/Deposit.abi";
-    let out_file = "./deposit.rs";
-
-    Abigen::new("DepositContract", abi_source)
-        .unwrap()
-        .add_derive("serde::Serialize")
-        .unwrap()
-        .add_derive("serde::Deserialize")
-        .unwrap()
-        .generate()
-        .unwrap()
-        .write_to_file(out_file)
-        .unwrap();
-    Ok(())
-}
 
 pub fn get_current_epoch(clock: &SystemTimeSlotClock) -> Result<u64> {
     let current_epoch = clock.now().ok_or(anyhow!("clock now"))? / SLOT_PER_EPOCH;
@@ -37,13 +21,4 @@ pub fn caculate_arp(
         * EPOCH_PER_YEAR as f64
         / 32_000_000_000.0) as f64;
     Ok(arp)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_gen_abi() {
-        rust_file_generation().unwrap()
-    }
 }

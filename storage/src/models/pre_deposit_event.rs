@@ -106,3 +106,14 @@ pub async fn query_el_fee_address(client: &Client, wc: &Hash256) -> Result<Optio
     };
     Ok(Some(stored_evt.log.el_fee_contract))
 }
+
+pub async fn query_all_el_fee_contract(client: &Client) -> Result<Vec<Address>> {
+    let sql = "SELECT DISTINCT pre_deposit_filter->>'el_fee_contract' from pre_deposit_events;";
+    let rows = client.query(sql, &[]).await?;
+    let mut result = vec![];
+    for row in rows {
+        let address: String = row.get(0);
+        result.push(serde_json::from_str(&address)?);
+    }
+    Ok(result)
+}
