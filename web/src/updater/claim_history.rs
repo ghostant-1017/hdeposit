@@ -4,7 +4,10 @@ use super::*;
 use anyhow::anyhow;
 use anyhow::Result;
 use contract::elfee::ELFee;
+use contract::elfee::SplitFeeFilter;
+use ethers::prelude::LogMeta;
 use eth2::types::BlockId;
+use ethers::types::Address;
 use storage::models::insert_claim;
 use storage::models::upsert_sync_state;
 use storage::models::{query_all_el_fee_contract, select_sync_state, SyncState};
@@ -32,13 +35,7 @@ impl<T: EthSpec> Updater<T> {
                 continue;
             }
             let contract = ELFee::new(el_fee_address, eth1_client.clone());
-            let logs = contract
-                .split_fee_filter()
-                .address(el_fee_address.into())
-                .from_block(from)
-                .to_block(to)
-                .query_with_meta()
-                .await?;
+            let logs = query_logs_batch(contract, from, to, el_fee_address).await?;
             for (log, meta) in logs {
                 insert_claim(tx.client(), el_fee_address, log, meta).await?;
             }
@@ -52,6 +49,23 @@ impl<T: EthSpec> Updater<T> {
         Ok(())
     }
 }
+
+pub async fn query_logs_batch(contract: ELFee<Provider<Http>>, from: u64, to: u64, el_fee_address: Address) -> Result<Vec<(SplitFeeFilter, LogMeta)>> {
+    let mut result = vec![];
+    for i in (from..=to).step_by(10000) {
+        let current_from = i;
+        let current_to = (i + 10000).min(to);
+        let logs = contract
+        .split_fee_filter()
+        .address(el_fee_address.into())
+        .from_block(current_from)
+        .to_block(current_to)
+        .query_with_meta()
+        .await?;
+        result.extend(logs);
+    }
+    Ok(result)
+} 
 
 // TODO: reuse
 pub async fn get_current_finality_block_number<T: EthSpec>(
