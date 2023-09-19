@@ -54,7 +54,7 @@ impl Server {
             .route("/api/v1/exit", post(post_exit))
             .route("/api/v1/validators", get(get_validators))
             .route("/api/v1/balance", get(get_balance))
-            .route("api/v1/daily_rewards", get(get_daily_rewards_7days))
+            .route("/api/v1/daily_rewards", get(get_daily_rewards_7days))
             .with_state(self);
         info!("Server start at: {}", addr);
         axum::Server::bind(&addr)
