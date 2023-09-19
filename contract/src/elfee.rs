@@ -7,13 +7,11 @@ pub use el_fee::*;
     clippy::upper_case_acronyms,
     clippy::type_complexity,
     dead_code,
-    non_camel_case_types,
+    non_camel_case_types
 )]
 pub mod el_fee {
     const _: () = {
-        ::core::include_bytes!(
-            "../abi/ELFee.abi",
-        );
+        ::core::include_bytes!("../abi/ELFee.abi",);
     };
     #[allow(deprecated)]
     fn __abi() -> ::ethers::core::abi::Abi {
@@ -39,159 +37,122 @@ pub mod el_fee {
             functions: ::core::convert::From::from([
                 (
                     ::std::borrow::ToOwned::to_owned("claimedUserAmount"),
-                    ::std::vec![
-                        ::ethers::core::abi::ethabi::Function {
-                            name: ::std::borrow::ToOwned::to_owned("claimedUserAmount"),
-                            inputs: ::std::vec![],
-                            outputs: ::std::vec![
-                                ::ethers::core::abi::ethabi::Param {
-                                    name: ::std::string::String::new(),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::Uint(
-                                        256usize,
-                                    ),
-                                    internal_type: ::core::option::Option::Some(
-                                        ::std::borrow::ToOwned::to_owned("uint256"),
-                                    ),
-                                },
-                            ],
-                            constant: ::core::option::Option::None,
-                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
-                        },
-                    ],
+                    ::std::vec![::ethers::core::abi::ethabi::Function {
+                        name: ::std::borrow::ToOwned::to_owned("claimedUserAmount"),
+                        inputs: ::std::vec![],
+                        outputs: ::std::vec![::ethers::core::abi::ethabi::Param {
+                            name: ::std::string::String::new(),
+                            kind: ::ethers::core::abi::ethabi::ParamType::Uint(256usize,),
+                            internal_type: ::core::option::Option::Some(
+                                ::std::borrow::ToOwned::to_owned("uint256"),
+                            ),
+                        },],
+                        constant: ::core::option::Option::None,
+                        state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
+                    },],
                 ),
                 (
                     ::std::borrow::ToOwned::to_owned("elFee"),
-                    ::std::vec![
-                        ::ethers::core::abi::ethabi::Function {
-                            name: ::std::borrow::ToOwned::to_owned("elFee"),
-                            inputs: ::std::vec![],
-                            outputs: ::std::vec![
-                                ::ethers::core::abi::ethabi::Param {
-                                    name: ::std::string::String::new(),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::Uint(
-                                        256usize,
-                                    ),
-                                    internal_type: ::core::option::Option::Some(
-                                        ::std::borrow::ToOwned::to_owned("uint256"),
-                                    ),
-                                },
-                            ],
-                            constant: ::core::option::Option::None,
-                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
-                        },
-                    ],
+                    ::std::vec![::ethers::core::abi::ethabi::Function {
+                        name: ::std::borrow::ToOwned::to_owned("elFee"),
+                        inputs: ::std::vec![],
+                        outputs: ::std::vec![::ethers::core::abi::ethabi::Param {
+                            name: ::std::string::String::new(),
+                            kind: ::ethers::core::abi::ethabi::ParamType::Uint(256usize,),
+                            internal_type: ::core::option::Option::Some(
+                                ::std::borrow::ToOwned::to_owned("uint256"),
+                            ),
+                        },],
+                        constant: ::core::option::Option::None,
+                        state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
+                    },],
                 ),
                 (
                     ::std::borrow::ToOwned::to_owned("setELFee"),
-                    ::std::vec![
-                        ::ethers::core::abi::ethabi::Function {
-                            name: ::std::borrow::ToOwned::to_owned("setELFee"),
-                            inputs: ::std::vec![
-                                ::ethers::core::abi::ethabi::Param {
-                                    name: ::std::borrow::ToOwned::to_owned("_elFee"),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::Uint(
-                                        256usize,
-                                    ),
-                                    internal_type: ::core::option::Option::Some(
-                                        ::std::borrow::ToOwned::to_owned("uint256"),
-                                    ),
-                                },
-                            ],
-                            outputs: ::std::vec![],
-                            constant: ::core::option::Option::None,
-                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::NonPayable,
-                        },
-                    ],
+                    ::std::vec![::ethers::core::abi::ethabi::Function {
+                        name: ::std::borrow::ToOwned::to_owned("setELFee"),
+                        inputs: ::std::vec![::ethers::core::abi::ethabi::Param {
+                            name: ::std::borrow::ToOwned::to_owned("_elFee"),
+                            kind: ::ethers::core::abi::ethabi::ParamType::Uint(256usize,),
+                            internal_type: ::core::option::Option::Some(
+                                ::std::borrow::ToOwned::to_owned("uint256"),
+                            ),
+                        },],
+                        outputs: ::std::vec![],
+                        constant: ::core::option::Option::None,
+                        state_mutability: ::ethers::core::abi::ethabi::StateMutability::NonPayable,
+                    },],
                 ),
                 (
                     ::std::borrow::ToOwned::to_owned("splitFee"),
-                    ::std::vec![
-                        ::ethers::core::abi::ethabi::Function {
-                            name: ::std::borrow::ToOwned::to_owned("splitFee"),
-                            inputs: ::std::vec![],
-                            outputs: ::std::vec![],
-                            constant: ::core::option::Option::None,
-                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::NonPayable,
-                        },
-                    ],
+                    ::std::vec![::ethers::core::abi::ethabi::Function {
+                        name: ::std::borrow::ToOwned::to_owned("splitFee"),
+                        inputs: ::std::vec![],
+                        outputs: ::std::vec![],
+                        constant: ::core::option::Option::None,
+                        state_mutability: ::ethers::core::abi::ethabi::StateMutability::NonPayable,
+                    },],
                 ),
                 (
                     ::std::borrow::ToOwned::to_owned("vaultAddr"),
-                    ::std::vec![
-                        ::ethers::core::abi::ethabi::Function {
-                            name: ::std::borrow::ToOwned::to_owned("vaultAddr"),
-                            inputs: ::std::vec![],
-                            outputs: ::std::vec![
-                                ::ethers::core::abi::ethabi::Param {
-                                    name: ::std::string::String::new(),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::Address,
-                                    internal_type: ::core::option::Option::Some(
-                                        ::std::borrow::ToOwned::to_owned("address"),
-                                    ),
-                                },
-                            ],
-                            constant: ::core::option::Option::None,
-                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
-                        },
-                    ],
+                    ::std::vec![::ethers::core::abi::ethabi::Function {
+                        name: ::std::borrow::ToOwned::to_owned("vaultAddr"),
+                        inputs: ::std::vec![],
+                        outputs: ::std::vec![::ethers::core::abi::ethabi::Param {
+                            name: ::std::string::String::new(),
+                            kind: ::ethers::core::abi::ethabi::ParamType::Address,
+                            internal_type: ::core::option::Option::Some(
+                                ::std::borrow::ToOwned::to_owned("address"),
+                            ),
+                        },],
+                        constant: ::core::option::Option::None,
+                        state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
+                    },],
                 ),
                 (
                     ::std::borrow::ToOwned::to_owned("withdrawalAddr"),
-                    ::std::vec![
-                        ::ethers::core::abi::ethabi::Function {
-                            name: ::std::borrow::ToOwned::to_owned("withdrawalAddr"),
-                            inputs: ::std::vec![],
-                            outputs: ::std::vec![
-                                ::ethers::core::abi::ethabi::Param {
-                                    name: ::std::string::String::new(),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::Address,
-                                    internal_type: ::core::option::Option::Some(
-                                        ::std::borrow::ToOwned::to_owned("address"),
-                                    ),
-                                },
-                            ],
-                            constant: ::core::option::Option::None,
-                            state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
-                        },
-                    ],
+                    ::std::vec![::ethers::core::abi::ethabi::Function {
+                        name: ::std::borrow::ToOwned::to_owned("withdrawalAddr"),
+                        inputs: ::std::vec![],
+                        outputs: ::std::vec![::ethers::core::abi::ethabi::Param {
+                            name: ::std::string::String::new(),
+                            kind: ::ethers::core::abi::ethabi::ParamType::Address,
+                            internal_type: ::core::option::Option::Some(
+                                ::std::borrow::ToOwned::to_owned("address"),
+                            ),
+                        },],
+                        constant: ::core::option::Option::None,
+                        state_mutability: ::ethers::core::abi::ethabi::StateMutability::View,
+                    },],
                 ),
             ]),
-            events: ::core::convert::From::from([
-                (
-                    ::std::borrow::ToOwned::to_owned("SplitFee"),
-                    ::std::vec![
-                        ::ethers::core::abi::ethabi::Event {
-                            name: ::std::borrow::ToOwned::to_owned("SplitFee"),
-                            inputs: ::std::vec![
-                                ::ethers::core::abi::ethabi::EventParam {
-                                    name: ::std::borrow::ToOwned::to_owned("protocolAmount"),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::Uint(
-                                        256usize,
-                                    ),
-                                    indexed: false,
-                                },
-                                ::ethers::core::abi::ethabi::EventParam {
-                                    name: ::std::borrow::ToOwned::to_owned("userAmount"),
-                                    kind: ::ethers::core::abi::ethabi::ParamType::Uint(
-                                        256usize,
-                                    ),
-                                    indexed: false,
-                                },
-                            ],
-                            anonymous: false,
+            events: ::core::convert::From::from([(
+                ::std::borrow::ToOwned::to_owned("SplitFee"),
+                ::std::vec![::ethers::core::abi::ethabi::Event {
+                    name: ::std::borrow::ToOwned::to_owned("SplitFee"),
+                    inputs: ::std::vec![
+                        ::ethers::core::abi::ethabi::EventParam {
+                            name: ::std::borrow::ToOwned::to_owned("protocolAmount"),
+                            kind: ::ethers::core::abi::ethabi::ParamType::Uint(256usize,),
+                            indexed: false,
+                        },
+                        ::ethers::core::abi::ethabi::EventParam {
+                            name: ::std::borrow::ToOwned::to_owned("userAmount"),
+                            kind: ::ethers::core::abi::ethabi::ParamType::Uint(256usize,),
+                            indexed: false,
                         },
                     ],
-                ),
-            ]),
+                    anonymous: false,
+                },],
+            )]),
             errors: ::std::collections::BTreeMap::new(),
             receive: false,
             fallback: false,
         }
     }
     ///The parsed JSON ABI of the contract.
-    pub static ELFEE_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> = ::ethers::contract::Lazy::new(
-        __abi,
-    );
+    pub static ELFEE_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
+        ::ethers::contract::Lazy::new(__abi);
     pub struct ELFee<M>(::ethers::contract::Contract<M>);
     impl<M> ::core::clone::Clone for ELFee<M> {
         fn clone(&self) -> Self {
@@ -211,7 +172,9 @@ pub mod el_fee {
     }
     impl<M> ::core::fmt::Debug for ELFee<M> {
         fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-            f.debug_tuple(::core::stringify!(ELFee)).field(&self.address()).finish()
+            f.debug_tuple(::core::stringify!(ELFee))
+                .field(&self.address())
+                .finish()
         }
     }
     impl<M: ::ethers::providers::Middleware> ELFee<M> {
@@ -221,13 +184,11 @@ pub mod el_fee {
             address: T,
             client: ::std::sync::Arc<M>,
         ) -> Self {
-            Self(
-                ::ethers::contract::Contract::new(
-                    address.into(),
-                    ELFEE_ABI.clone(),
-                    client,
-                ),
-            )
+            Self(::ethers::contract::Contract::new(
+                address.into(),
+                ELFEE_ABI.clone(),
+                client,
+            ))
         }
         ///Calls the contract's `claimedUserAmount` (0x96f0a422) function
         pub fn claimed_user_amount(
@@ -263,10 +224,7 @@ pub mod el_fee {
         ///Calls the contract's `vaultAddr` (0xd27567f2) function
         pub fn vault_addr(
             &self,
-        ) -> ::ethers::contract::builders::ContractCall<
-            M,
-            ::ethers::core::types::Address,
-        > {
+        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Address> {
             self.0
                 .method_hash([210, 117, 103, 242], ())
                 .expect("method not found (this should never happen)")
@@ -274,10 +232,7 @@ pub mod el_fee {
         ///Calls the contract's `withdrawalAddr` (0xaa6b6e51) function
         pub fn withdrawal_addr(
             &self,
-        ) -> ::ethers::contract::builders::ContractCall<
-            M,
-            ::ethers::core::types::Address,
-        > {
+        ) -> ::ethers::contract::builders::ContractCall<M, ::ethers::core::types::Address> {
             self.0
                 .method_hash([170, 107, 110, 81], ())
                 .expect("method not found (this should never happen)")
@@ -285,26 +240,18 @@ pub mod el_fee {
         ///Gets the contract's `SplitFee` event
         pub fn split_fee_filter(
             &self,
-        ) -> ::ethers::contract::builders::Event<
-            ::std::sync::Arc<M>,
-            M,
-            SplitFeeFilter,
-        > {
+        ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, SplitFeeFilter> {
             self.0.event()
         }
         /// Returns an `Event` builder for all the events of this contract.
         pub fn events(
             &self,
-        ) -> ::ethers::contract::builders::Event<
-            ::std::sync::Arc<M>,
-            M,
-            SplitFeeFilter,
-        > {
-            self.0.event_with_filter(::core::default::Default::default())
+        ) -> ::ethers::contract::builders::Event<::std::sync::Arc<M>, M, SplitFeeFilter> {
+            self.0
+                .event_with_filter(::core::default::Default::default())
         }
     }
-    impl<M: ::ethers::providers::Middleware> From<::ethers::contract::Contract<M>>
-    for ELFee<M> {
+    impl<M: ::ethers::providers::Middleware> From<::ethers::contract::Contract<M>> for ELFee<M> {
         fn from(contract: ::ethers::contract::Contract<M>) -> Self {
             Self::new(contract.address(), contract.client())
         }
@@ -319,7 +266,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethevent(name = "SplitFee", abi = "SplitFee(uint256,uint256)")]
     pub struct SplitFeeFilter {
@@ -337,7 +284,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "claimedUserAmount", abi = "claimedUserAmount()")]
     pub struct ClaimedUserAmountCall;
@@ -352,7 +299,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "elFee", abi = "elFee()")]
     pub struct ElFeeCall;
@@ -367,7 +314,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "setELFee", abi = "setELFee(uint256)")]
     pub struct SetELFeeCall {
@@ -384,7 +331,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "splitFee", abi = "splitFee()")]
     pub struct SplitFeeCall;
@@ -399,7 +346,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "vaultAddr", abi = "vaultAddr()")]
     pub struct VaultAddrCall;
@@ -414,7 +361,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     #[ethcall(name = "withdrawalAddr", abi = "withdrawalAddr()")]
     pub struct WithdrawalAddrCall;
@@ -427,7 +374,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub enum ELFeeCalls {
         ClaimedUserAmount(ClaimedUserAmountCall),
@@ -442,30 +389,26 @@ pub mod el_fee {
             data: impl AsRef<[u8]>,
         ) -> ::core::result::Result<Self, ::ethers::core::abi::AbiError> {
             let data = data.as_ref();
-            if let Ok(decoded)
-                = <ClaimedUserAmountCall as ::ethers::core::abi::AbiDecode>::decode(
-                    data,
-                ) {
+            if let Ok(decoded) =
+                <ClaimedUserAmountCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::ClaimedUserAmount(decoded));
             }
-            if let Ok(decoded)
-                = <ElFeeCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <ElFeeCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::ElFee(decoded));
             }
-            if let Ok(decoded)
-                = <SetELFeeCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <SetELFeeCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::SetELFee(decoded));
             }
-            if let Ok(decoded)
-                = <SplitFeeCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <SplitFeeCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::SplitFee(decoded));
             }
-            if let Ok(decoded)
-                = <VaultAddrCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) = <VaultAddrCall as ::ethers::core::abi::AbiDecode>::decode(data) {
                 return Ok(Self::VaultAddr(decoded));
             }
-            if let Ok(decoded)
-                = <WithdrawalAddrCall as ::ethers::core::abi::AbiDecode>::decode(data) {
+            if let Ok(decoded) =
+                <WithdrawalAddrCall as ::ethers::core::abi::AbiDecode>::decode(data)
+            {
                 return Ok(Self::WithdrawalAddr(decoded));
             }
             Err(::ethers::core::abi::Error::InvalidData.into())
@@ -474,22 +417,12 @@ pub mod el_fee {
     impl ::ethers::core::abi::AbiEncode for ELFeeCalls {
         fn encode(self) -> Vec<u8> {
             match self {
-                Self::ClaimedUserAmount(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                Self::ClaimedUserAmount(element) => ::ethers::core::abi::AbiEncode::encode(element),
                 Self::ElFee(element) => ::ethers::core::abi::AbiEncode::encode(element),
-                Self::SetELFee(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::SplitFee(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::VaultAddr(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
-                Self::WithdrawalAddr(element) => {
-                    ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                Self::SetELFee(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::SplitFee(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::VaultAddr(element) => ::ethers::core::abi::AbiEncode::encode(element),
+                Self::WithdrawalAddr(element) => ::ethers::core::abi::AbiEncode::encode(element),
             }
         }
     }
@@ -546,7 +479,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct ClaimedUserAmountReturn(pub ::ethers::core::types::U256);
     ///Container type for all return fields from the `elFee` function with signature `elFee()` and selector `0x30e739ae`
@@ -560,7 +493,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct ElFeeReturn(pub ::ethers::core::types::U256);
     ///Container type for all return fields from the `vaultAddr` function with signature `vaultAddr()` and selector `0xd27567f2`
@@ -574,7 +507,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct VaultAddrReturn(pub ::ethers::core::types::Address);
     ///Container type for all return fields from the `withdrawalAddr` function with signature `withdrawalAddr()` and selector `0xaa6b6e51`
@@ -588,7 +521,7 @@ pub mod el_fee {
         Debug,
         PartialEq,
         Eq,
-        Hash
+        Hash,
     )]
     pub struct WithdrawalAddrReturn(pub ::ethers::core::types::Address);
 }

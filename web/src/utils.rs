@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use ethers::prelude::Abigen;
+
 use slot_clock::{SlotClock, SystemTimeSlotClock};
 
 pub const EPOCH_PER_YEAR: u64 = 82125;

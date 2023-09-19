@@ -1,6 +1,6 @@
 pub mod deposit;
-pub mod vault;
 pub mod elfee;
+pub mod vault;
 use anyhow::Result;
 use ethers::prelude::Abigen;
 
@@ -22,15 +22,15 @@ pub fn rust_file_generation() -> Result<()> {
 
 fn generate(contract_name: &str, abi_source: &str, out_file: &str) {
     Abigen::new(contract_name, abi_source)
-    .unwrap()
-    .add_derive("serde::Serialize")
-    .unwrap()
-    .add_derive("serde::Deserialize")
-    .unwrap()
-    .generate()
-    .unwrap()
-    .write_to_file(out_file)
-    .unwrap();
+        .unwrap()
+        .add_derive("serde::Serialize")
+        .unwrap()
+        .add_derive("serde::Deserialize")
+        .unwrap()
+        .generate()
+        .unwrap()
+        .write_to_file(out_file)
+        .unwrap();
 }
 
 #[cfg(test)]

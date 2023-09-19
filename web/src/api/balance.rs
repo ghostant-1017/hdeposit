@@ -3,7 +3,10 @@ use crate::utils::{caculate_arp, DEPOSIT_AMOUNT};
 use super::*;
 use eth2::types::Hash256;
 use ethers::types::Address;
-use storage::models::{select_validators_by_credentials, select_withdrawals_by_validator_index, query_el_fee_address_by_wc};
+use storage::models::{
+    query_el_fee_address_by_wc, select_validators_by_credentials,
+    select_withdrawals_by_validator_index,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct Params {
@@ -20,7 +23,7 @@ pub struct Response {
     pub accumulative_fee_reward: i64,
 
     pub cl_arp: f64,
-    pub el_fee_address: Option<Address>
+    pub el_fee_address: Option<Address>,
 }
 
 pub async fn get_balance(
@@ -72,6 +75,6 @@ pub async fn get_balance(
         accumulative_protocol_reward,
         accumulative_fee_reward,
         cl_arp,
-        el_fee_address
+        el_fee_address,
     }))
 }

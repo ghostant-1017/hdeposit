@@ -8,10 +8,10 @@ use storage::db::PgPool;
 use tracing::error;
 type DepositContract = DepositContractABI<Provider<Http>>;
 
+mod claim_history;
 mod deposit_events;
 mod validators;
 mod withdrawals;
-mod claim_history;
 pub struct Updater<T: EthSpec> {
     beacon: BeaconNodeHttpClient,
     eth1_client: Provider<Http>,

@@ -1,4 +1,3 @@
-
 use super::*;
 
 use bb8_postgres::tokio_postgres::{Client, Row};
@@ -99,10 +98,8 @@ pub async fn query_el_fee_address_by_wc(client: &Client, wc: &Hash256) -> Result
     let wc = wc.trim_matches('"');
     let result = client.query_opt(sql, &[&wc]).await?;
     let stored_evt: StoredPreDepositEvt = match result {
-        Some(row) => {
-            row.try_into()?
-        },
-        None => return Ok(None)
+        Some(row) => row.try_into()?,
+        None => return Ok(None),
     };
     Ok(Some(stored_evt.log.el_fee_contract))
 }

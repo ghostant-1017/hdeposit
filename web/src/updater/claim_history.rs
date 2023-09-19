@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use super::*;
-use anyhow::Result;
 use anyhow::anyhow;
+use anyhow::Result;
 use contract::elfee::ELFee;
 use eth2::types::BlockId;
 use storage::models::insert_claim;
@@ -16,7 +16,10 @@ impl<T: EthSpec> Updater<T> {
         let mut db = self.pool.get().await?;
         let el_fee_addresses = query_all_el_fee_contract(&db).await?;
         let to = get_current_finality_block_number::<T>(&self.beacon).await?;
-        info!("Prepare to update el fee address: {}", el_fee_addresses.len());
+        info!(
+            "Prepare to update el fee address: {}",
+            el_fee_addresses.len()
+        );
         for el_fee_address in el_fee_addresses {
             if el_fee_address.is_zero() {
                 continue;
@@ -36,16 +39,21 @@ impl<T: EthSpec> Updater<T> {
                 .to_block(to)
                 .query_with_meta()
                 .await?;
-            for (log,meta) in logs {
+            for (log, meta) in logs {
                 insert_claim(tx.client(), el_fee_address, log, meta).await?;
             }
-            upsert_sync_state(tx.client(), &SyncState::ContractLogs(el_fee_address), &(to as i64)).await?;
+            upsert_sync_state(
+                tx.client(),
+                &SyncState::ContractLogs(el_fee_address),
+                &(to as i64),
+            )
+            .await?;
         }
         Ok(())
     }
 }
 
-// TODO: reuse 
+// TODO: reuse
 pub async fn get_current_finality_block_number<T: EthSpec>(
     beacon: &BeaconNodeHttpClient,
 ) -> Result<u64> {
@@ -62,7 +70,6 @@ pub async fn get_current_finality_block_number<T: EthSpec>(
     let block_number = payload.execution_payload_ref().block_number();
     Ok(block_number)
 }
-
 
 #[cfg(test)]
 mod tests {

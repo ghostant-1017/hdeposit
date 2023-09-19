@@ -1,14 +1,17 @@
 use anyhow::Result;
 use bb8_postgres::tokio_postgres::{Client, Row};
-use lighthouse_types::{Address, Withdrawal, Hash256, Slot, WithdrawalCredentials};
-
+use lighthouse_types::{Address, Hash256, Slot, Withdrawal};
 
 pub struct StoredWithdrawal {
     pub slot: Slot,
     pub withdrawal: Withdrawal,
 }
 
-pub async fn upsert_withdrawals(client: &Client, withdrawals: &Vec<Withdrawal>, slot: i64) -> Result<()> {
+pub async fn upsert_withdrawals(
+    client: &Client,
+    withdrawals: &Vec<Withdrawal>,
+    slot: i64,
+) -> Result<()> {
     for withdrawal in withdrawals {
         client
             .execute(
@@ -46,7 +49,12 @@ pub async fn select_withdrawals_by_validator_index(
     Ok(results)
 }
 
-pub async fn select_withdrawals_by_wc_range(client: &Client, wc: Hash256, start: i64, end: i64) -> Result<Vec<StoredWithdrawal>> {
+pub async fn select_withdrawals_by_wc_range(
+    client: &Client,
+    wc: Hash256,
+    start: i64,
+    end: i64,
+) -> Result<Vec<StoredWithdrawal>> {
     let sql = "select * from withdrawals where slot >= $1 and slot < $2 and address = $3;";
     let address = serde_json::to_string(&wc_to_address(wc))?;
     let rows = client.query(sql, &[&start, &end, &address]).await?;
@@ -78,7 +86,7 @@ fn row_to_withdrawal(row: Row) -> Result<StoredWithdrawal> {
     };
     let stored_withdrawal = StoredWithdrawal {
         withdrawal,
-        slot: (slot as u64).into()
+        slot: (slot as u64).into(),
     };
     Ok(stored_withdrawal)
 }

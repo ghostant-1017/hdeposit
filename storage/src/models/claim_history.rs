@@ -1,12 +1,15 @@
+use anyhow::Result;
 use bb8_postgres::tokio_postgres::Client;
 use contract::elfee::SplitFeeFilter;
-use ethers::types::Address;
 use ethers::prelude::LogMeta;
-use anyhow::Result;
+use ethers::types::Address;
 
-
-
-pub async fn insert_claim(client: &Client, address: Address, log: SplitFeeFilter, meta: LogMeta) -> Result<()> {
+pub async fn insert_claim(
+    client: &Client,
+    address: Address,
+    log: SplitFeeFilter,
+    meta: LogMeta,
+) -> Result<()> {
     let sql = "insert into claim_history(el_fee_contract, log, meta) values($1, $2, $3);";
     let address = serde_json::to_string(&address)?;
     let log = serde_json::to_value(log)?;
@@ -15,9 +18,14 @@ pub async fn insert_claim(client: &Client, address: Address, log: SplitFeeFilter
     Ok(())
 }
 
-pub async fn select_claim_by_address(client: &Client, address: Address) -> Result<Vec<(SplitFeeFilter, LogMeta)>> {
+pub async fn select_claim_by_address(
+    client: &Client,
+    address: Address,
+) -> Result<Vec<(SplitFeeFilter, LogMeta)>> {
     let sql = "select * from claim_history where address = $1";
-    let rows = client.query(sql, &[&serde_json::to_string(&address)?]).await?;
+    let rows = client
+        .query(sql, &[&serde_json::to_string(&address)?])
+        .await?;
     let mut result = vec![];
     for row in rows {
         let log: serde_json::Value = row.get("log");

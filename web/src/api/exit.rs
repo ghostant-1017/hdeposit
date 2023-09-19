@@ -5,10 +5,10 @@ use eth2::{
 };
 use ethers::types::{Address, Signature};
 use serde::de;
+use std::str::FromStr;
 use storage::models::{
     insert_exit_message, query_keystore_by_public_key, select_validator_by_index,
 };
-use std::str::FromStr;
 
 use crate::utils::get_current_epoch;
 
@@ -30,13 +30,23 @@ pub struct Params {
 impl<'a> Deserialize<'a> for Params {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: serde::Deserializer<'a> 
+        D: serde::Deserializer<'a>,
     {
         let mut m_result = serde_json::Value::deserialize(deserializer)?;
 
-        let validator_index: u64 = serde_json::from_value(m_result["validator_index"].take()).map_err(de::Error::custom)?;
-        let signature: Signature = Signature::from_str(&m_result["signature"].take().as_str().ok_or(de::Error::custom("signature missing"))?).map_err(de::Error::custom)?;
-        Ok(Self { validator_index, signature })
+        let validator_index: u64 = serde_json::from_value(m_result["validator_index"].take())
+            .map_err(de::Error::custom)?;
+        let signature: Signature = Signature::from_str(
+            m_result["signature"]
+                .take()
+                .as_str()
+                .ok_or(de::Error::custom("signature missing"))?,
+        )
+        .map_err(de::Error::custom)?;
+        Ok(Self {
+            validator_index,
+            signature,
+        })
     }
 }
 
