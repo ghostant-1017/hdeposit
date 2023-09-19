@@ -3,7 +3,7 @@ use crate::utils::{caculate_arp, DEPOSIT_AMOUNT};
 use super::*;
 use eth2::types::Hash256;
 use ethers::types::Address;
-use storage::models::{select_validators_by_credentials, select_withdrawals_by_validator_index, query_el_fee_address};
+use storage::models::{select_validators_by_credentials, select_withdrawals_by_validator_index, query_el_fee_address_by_wc};
 
 #[derive(Debug, Deserialize)]
 pub struct Params {
@@ -29,7 +29,7 @@ pub async fn get_balance(
 ) -> Result<Json<Response>, AppError> {
     info!("Query wallet: {}", params.wc);
     let conn = server.pool.get().await?;
-    let el_fee_address = query_el_fee_address(&conn, &params.wc).await?;
+    let el_fee_address = query_el_fee_address_by_wc(&conn, &params.wc).await?;
     let validators = select_validators_by_credentials(&conn, params.wc).await?;
     let mut total_balance = 0;
     let mut effective_balance = 0;

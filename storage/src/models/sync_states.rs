@@ -1,9 +1,11 @@
 use anyhow::Result;
 use bb8_postgres::tokio_postgres::{types::ToSql, Client};
+use ethers::types::Address;
 pub enum SyncState {
     WithdrawalFinalizedSlot,
     WithdrawalLastSlot,
     DepositTxLastPK,
+    ContractLogs(Address)
 }
 
 impl SyncState {
@@ -12,6 +14,7 @@ impl SyncState {
             SyncState::WithdrawalFinalizedSlot => "withdrawal_finalized_slot".to_string(),
             SyncState::WithdrawalLastSlot => "withdrawal_last_slot".to_string(),
             SyncState::DepositTxLastPK => "deposit_last_pk".to_string(),
+            SyncState::ContractLogs(address) => format!("contract_logs_{}", serde_json::to_string(&address).unwrap())
         }
     }
 }

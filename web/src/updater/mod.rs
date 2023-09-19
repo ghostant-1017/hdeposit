@@ -14,6 +14,7 @@ mod withdrawals;
 mod claim_history;
 pub struct Updater<T: EthSpec> {
     beacon: BeaconNodeHttpClient,
+    eth1_client: Provider<Http>,
     pool: PgPool,
     deposit_contract: DepositContract,
     start: u64,
@@ -23,12 +24,14 @@ pub struct Updater<T: EthSpec> {
 impl<T: EthSpec> Updater<T> {
     pub fn new(
         beacon: BeaconNodeHttpClient,
+        eth1_client: Provider<Http>,
         pool: PgPool,
         deposit_contract: DepositContract,
         start: u64,
     ) -> Self {
         Self {
             beacon,
+            eth1_client,
             pool,
             deposit_contract,
             start,

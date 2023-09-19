@@ -67,7 +67,7 @@ mod tests {
     fn test_map()  {
         let now = chrono::Utc::now();
         let today = now.date_naive().and_hms_opt(0, 0, 0).unwrap();
-        let mut result = HashMap::<NaiveDateTime, u64>::new();
+        let mut result = IndexMap::<NaiveDateTime, u64>::new();
         for i in 1..=7 {
             let day = today.checked_sub_days(Days::new(i)).ok_or(anyhow!("sub error")).unwrap();
             result.insert(day, 0);

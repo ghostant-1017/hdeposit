@@ -63,10 +63,11 @@ impl Cli {
         );
         let pool = initial_pg_pool(self.dsn).await?;
         let deposit_contract =
-            DepositContract::new(spec.deposit_contract_address, Arc::new(eth1_provider));
-
+            DepositContract::new(spec.deposit_contract_address, Arc::new(eth1_provider.clone()));
+    
         let updater = Updater::<MainnetEthSpec>::new(
             beacon.clone(),
+            eth1_provider.clone(),
             pool.clone(),
             deposit_contract,
             self.start,

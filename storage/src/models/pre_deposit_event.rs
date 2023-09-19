@@ -93,7 +93,7 @@ pub async fn update_events_to_flattened(client: &Client, pk: i64) -> Result<u64>
     Ok(result)
 }
 
-pub async fn query_el_fee_address(client: &Client, wc: &Hash256) -> Result<Option<Address>> {
+pub async fn query_el_fee_address_by_wc(client: &Client, wc: &Hash256) -> Result<Option<Address>> {
     let sql = "select * from pre_deposit_events where pre_deposit_filter->>'withdrawal_credential' = $1 and pre_deposit_filter->>'create_el_fee' = 'true' limit 1;";
     let wc = serde_json::to_string(wc)?;
     let wc = wc.trim_matches('"');
@@ -113,6 +113,7 @@ pub async fn query_all_el_fee_contract(client: &Client) -> Result<Vec<Address>> 
     let mut result = vec![];
     for row in rows {
         let address: String = row.get(0);
+        let address = format!("\"{}\"", address);
         result.push(serde_json::from_str(&address)?);
     }
     Ok(result)
