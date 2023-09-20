@@ -4,7 +4,7 @@ use std::time::Duration;
 use crate::eth2::get_current_finality_block_number;
 use crate::storage::db::PgPool;
 use crate::storage::models::{
-    insert_eth_transaction, query_pending_deposit_data, select_pending_eth_transactions,
+    insert_eth_transaction, query_pending_deposit_data_limit50, select_pending_eth_transactions,
     update_batch_deposit_data, update_eth_tx_to_finality, StoredDepositData, StoredEthTransaction,
 };
 use crate::utils::{generate_deposit_calldata, BatchDepositCallData};
@@ -322,7 +322,7 @@ impl<T: EthSpec> ProcessorService<T> {
     }
 
     async fn select_pending_deposit_data(&self, client: &Client) -> Result<Vec<StoredDepositData>> {
-        let batch = query_pending_deposit_data(client).await?;
+        let batch = query_pending_deposit_data_limit50(client).await?;
         Ok(batch)
     }
 
