@@ -21,13 +21,17 @@ impl TryFrom<Row> for HellmanValidator {
         let pubkey: String = row.get("pubkey");
         let wc: String = row.get("withdrawal_credentials");
         let amount: i64 = row.get("amount");
-        let data: serde_json::Value = row.get("data");
+        let data: Option<serde_json::Value> = row.get("data");
+        let validator_data = match data {
+            Some(data) => Some(serde_json::from_value(data)?),
+            None => None,
+        };
         Ok(Self {
             index: index as u64,
             pubkey: serde_json::from_str(&pubkey)?,
             withdrawal_credentials: serde_json::from_str(&wc)?,
             amount: amount as u64,
-            data: serde_json::from_value(data)?,
+            data: validator_data,
         })
     }
 }
