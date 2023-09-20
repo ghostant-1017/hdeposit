@@ -2,7 +2,8 @@
 members = [
     "web",
     "crontab",
-    "storage"
+    "storage",
+    "syncer"
 ]
 resolver = "2"
 
