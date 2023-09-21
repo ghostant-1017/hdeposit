@@ -73,7 +73,7 @@ impl<T: EthSpec> EventService<T> {
             to
         );
         if from - 1 == to {
-            return Ok(to);
+            return Ok(from);
         }
         info!("[Syncer]Querying logs from {from} to {to}");
         let logs = self.query_pre_deposit_logs(from, to).await?;
