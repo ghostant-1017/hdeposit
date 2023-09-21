@@ -72,7 +72,7 @@ impl<T: EthSpec> EventService<T> {
             from,
             to
         );
-        if from == to {
+        if from - 1 == to {
             return Ok(to);
         }
         info!("[Syncer]Querying logs from {from} to {to}");
