@@ -67,7 +67,7 @@ impl<T: EthSpec> EventService<T> {
             .context("get current finality")?;
         info!("[Syncer]Current finality block number: {to}");
         ensure!(
-            from <= to,
+            from - 1 <= to,
             "Critical bug or Ethereum finality broken, synced: {}, finality: {}",
             from,
             to
@@ -82,7 +82,7 @@ impl<T: EthSpec> EventService<T> {
             "[Syncer]Insert logs from {from} to {to} success, nums: {}",
             logs.len()
         );
-        Ok(to)
+        Ok(to + 1)
     }
 }
 
