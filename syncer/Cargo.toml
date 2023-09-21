@@ -9,3 +9,4 @@ edition = "2021"
 anyhow = "1"
 eth2 = { workspace = true}
 ethers = { workspace = true}
+storage = {path = "../storage"}

@@ -6751,6 +6751,7 @@ dependencies = [
  "anyhow",
  "eth2",
  "ethers",
+ "storage",
 ]
 
 [[package]]

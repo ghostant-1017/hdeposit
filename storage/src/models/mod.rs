@@ -16,6 +16,7 @@ mod exit_messages;
 pub use exit_messages::*;
 mod claim_history;
 pub use claim_history::*;
-
+mod el_fee;
+pub use el_fee::*;
 use anyhow::{anyhow, Result};
 use contract::vault::PreDepositFilter;

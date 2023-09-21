@@ -1,23 +1,12 @@
 use anyhow::anyhow;
-use ethers::types::H160;
-use ethers::types::H256;
 use crate::geth::Eth1Client;
 use crate::geth::get_block_receipts_by_hash;
+use storage::models::ELFee;
 use eth2::types::{BeaconBlock, EthSpec};
 use ethers::types::TransactionReceipt;
 
 
-pub struct ValidatorELFee {
-    pub slot: u64,
-    pub block_number: u64,
-    pub block_hash: H256,
-
-    pub validator_index: u64,
-    pub fee_recipient: H160,
-    pub amount: u64,
-}
-
-pub async fn extract_el_rewards_capella<T: EthSpec>(block: BeaconBlock<T>, eth1: &Eth1Client) -> anyhow::Result<ValidatorELFee> {
+pub async fn extract_el_rewards_capella<T: EthSpec>(block: BeaconBlock<T>, eth1: &Eth1Client) -> anyhow::Result<ELFee> {
     let block = block.as_capella().map_err(|_| anyhow!("not capella block"))?;
     let slot = block.slot.as_u64();
     let validator_index = block.proposer_index;
@@ -28,7 +17,7 @@ pub async fn extract_el_rewards_capella<T: EthSpec>(block: BeaconBlock<T>, eth1:
     // 3. query block_hash from eth1
     let receipts = get_block_receipts_by_hash(eth1, block_number).await?;
     let amount = caculate_block_fee(receipts)?;
-    Ok(ValidatorELFee {
+    Ok(ELFee {
         slot,
         block_number,
         block_hash: block_hash.into_root(),
