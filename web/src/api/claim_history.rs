@@ -1,6 +1,5 @@
-use contract::elfee::SplitFeeFilter;
 use eth2::types::Hash256;
-use ethers::prelude::LogMeta;
+use ethers::types::H256;
 use storage::models::{query_el_fee_address_by_wc, select_claim_by_address};
 
 use super::*;
@@ -11,8 +10,15 @@ pub struct Params {
 }
 
 #[derive(Debug, Serialize)]
+pub struct ClaimInfo {
+    block_number: u64,
+    tx_hash: H256,
+    amount: u64,
+}
+
+#[derive(Debug, Serialize)]
 pub struct Response {
-    data: Vec<(SplitFeeFilter, LogMeta)>,
+    data: Vec<ClaimInfo>,
 }
 
 pub async fn get_claim_history(
@@ -27,6 +33,13 @@ pub async fn get_claim_history(
         None => return Ok(Json(Response { data: vec![] })),
     };
     // 2. query el_fee_contract logs
-    let data = select_claim_by_address(&db, address).await?;
+    let data = select_claim_by_address(&db, address).await?
+    .into_iter()
+    .map(|(log, meta)| ClaimInfo {
+        block_number: meta.block_number.as_u64(),
+        tx_hash: meta.transaction_hash,
+        amount: log.user_amount.as_u64(),
+    })
+    .collect();
     Ok(Json(Response { data }))
 }
