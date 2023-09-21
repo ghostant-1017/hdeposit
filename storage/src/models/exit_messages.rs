@@ -17,7 +17,8 @@ pub async fn insert_exit_message(
     signed_voluntary_exit: &SignedVoluntaryExit,
 ) -> anyhow::Result<bool> {
     let sql = "insert into exit_messages(validator_index, user_message, user_signature, signed_voluntary_exit) 
-        values($1, $2, $3, $4) on conflict(validator_index) do nothing;";
+        values($1, $2, $3, $4) on conflict(validator_index) do update
+        set user_message=$2,user_signature=$3,signed_voluntary_exit=$4;";
     let user_signature = serde_json::to_string(&user_signature)?;
     let signed_voluntary_exit = serde_json::to_value(signed_voluntary_exit)?;
     let result = client
