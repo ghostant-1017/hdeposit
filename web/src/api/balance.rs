@@ -48,7 +48,7 @@ pub async fn get_balance(
             pending_protocol_balance +=
                 data.balance as i64 - (data.validator.effective_balance as i64);
             effective_balance += data.validator.effective_balance as i64;
-            let protocol_reward = select_withdrawals_by_validator_index(&conn, validator.index)
+            let protocol_reward = select_withdrawals_by_validator_index(&conn, data.index)
                 .await?
                 .into_iter()
                 .map(|w| w.withdrawal.amount as i64)

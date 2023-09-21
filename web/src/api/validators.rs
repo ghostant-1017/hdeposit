@@ -17,7 +17,7 @@ pub struct Params {
 
 #[derive(Serialize)]
 pub struct ValidatorInfo {
-    pub index: u64,
+    pub index: Option<u64>,
     pub balance: u64,
     pub status: ValidatorStatus,
     pub accumulative_protocol_reward: u64,
@@ -43,7 +43,7 @@ impl ValidatorInfo {
         } else {
             let validator_data = validator.data.unwrap();
             let accumulative_protocol_reward: u64 =
-                select_withdrawals_by_validator_index(client, validator.index)
+                select_withdrawals_by_validator_index(client, validator_data.index)
                     .await?
                     .into_iter()
                     .map(|w| w.withdrawal.amount)

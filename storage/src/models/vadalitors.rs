@@ -6,7 +6,7 @@ use ethers::types::U64;
 use lighthouse_types::{Hash256, PublicKey};
 
 pub struct HellmanValidator {
-    pub index: u64,
+    pub index: Option<u64>,
     pub pubkey: PublicKey,
     pub withdrawal_credentials: Hash256,
     pub amount: u64,
@@ -17,7 +17,7 @@ impl TryFrom<Row> for HellmanValidator {
     type Error = anyhow::Error;
 
     fn try_from(row: Row) -> Result<Self> {
-        let index: i64 = row.get("index");
+        let index: Option<i64> = row.get("index");
         let pubkey: String = row.get("pubkey");
         let wc: String = row.get("withdrawal_credentials");
         let amount: i64 = row.get("amount");
@@ -27,7 +27,7 @@ impl TryFrom<Row> for HellmanValidator {
             None => None,
         };
         Ok(Self {
-            index: index as u64,
+            index: index.and_then(|index| Some(index as u64)),
             pubkey: serde_json::from_str(&pubkey)?,
             withdrawal_credentials: serde_json::from_str(&wc)?,
             amount: amount as u64,
