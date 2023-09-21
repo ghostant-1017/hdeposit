@@ -22,7 +22,7 @@ pub async fn select_claim_by_address(
     client: &Client,
     address: Address,
 ) -> Result<Vec<(SplitFeeFilter, LogMeta)>> {
-    let sql = "select * from claim_history where address = $1";
+    let sql = "select * from claim_history where meta->>'address' = $1";
     let rows = client
         .query(sql, &[&serde_json::to_string(&address)?])
         .await?;
