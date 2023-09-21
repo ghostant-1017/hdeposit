@@ -1,3 +1,7 @@
+mod beacon;
+mod geth;
+mod validator;
+
 use anyhow::anyhow;
 use eth2::types::{BeaconBlock, EthSpec, Hash256};
 use ethers::types::{Block as Eth1Block, Transaction, TransactionReceipt};
@@ -10,7 +14,6 @@ pub async fn extract_el_rewards_capella<T: EthSpec>(block: BeaconBlock<T>) -> an
     // 2. Retrieve fee recipient and block hash
     let fee_recipient = block.body.execution_payload.execution_payload.fee_recipient;
     let block_hash = block.body.execution_payload.execution_payload.block_hash;
-
     // 3. query block_hash from eth1
     todo!()
 }
