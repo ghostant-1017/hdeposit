@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::{anyhow, Result};
 use bb8_postgres::tokio_postgres::{Client, Row};
 use contract::deposit::DepositEventFilter;
@@ -75,6 +77,17 @@ pub async fn select_all_validators(client: &Client) -> Result<Vec<HellmanValidat
         result.push(row.try_into()?);
     }
     Ok(result)
+}
+
+pub async fn select_all_validator_indexes(client: &Client) -> Result<HashSet<u64>> {
+    let sql = "select index from hellman_validators where index != null;";
+    let rows = client.query(sql, &[]).await?;
+    let mut result = HashSet::new();
+    for row in rows {
+        let index: i64 = row.get("index");
+        result.insert(index as u64);
+    }
+    return Ok(result)
 }
 
 pub async fn upsert_validators_by_logs(

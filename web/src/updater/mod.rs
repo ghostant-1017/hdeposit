@@ -12,6 +12,7 @@ mod claim_history;
 mod deposit_events;
 mod validators;
 mod withdrawals;
+mod el_fee;
 pub struct Updater<T: EthSpec> {
     beacon: BeaconNodeHttpClient,
     eth1_client: Provider<Http>,
@@ -52,6 +53,9 @@ impl<T: EthSpec> Updater<T> {
             }
             if let Err(err) = self.update_claim_history().await {
                 error!("Update claim history: {}", err);
+            }
+            if let Err(err) = self.update_el_fee().await {
+                error!("Update El fee: {}", err);
             }
             tokio::time::sleep(Duration::from_secs(12)).await
         }
