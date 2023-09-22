@@ -6752,6 +6752,7 @@ dependencies = [
  "eth2",
  "ethers",
  "storage",
+ "tokio",
 ]
 
 [[package]]
