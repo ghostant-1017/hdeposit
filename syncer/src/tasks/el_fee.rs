@@ -44,6 +44,7 @@ pub async fn extract_rewards(beacon: Arc<BeaconClient>, from: Slot, to: Slot, va
         let proposer_index = block_reward.meta.proposer_index;
         let sync_committee_rewards = block_reward.sync_committee_rewards;
         let attestation_rewards = block_reward.attestation_rewards;
+        println!("slot:{}, total:{}",block_reward.meta.slot, block_reward.total);
         if validators.contains(&proposer_index) {
             epoch_rewards.entry(epoch)
             .or_default().entry(proposer_index)
@@ -53,6 +54,7 @@ pub async fn extract_rewards(beacon: Arc<BeaconClient>, from: Slot, to: Slot, va
             for validator in validators {
                 if attestation_reward.contains_key(validator) {
                     let amount = *attestation_reward.get(validator).unwrap();
+                    println!("found amount: {}", amount);
                     epoch_rewards.entry(epoch).or_default().entry(*validator).or_default().add_assign(amount as i64)
                 }
             }
