@@ -6,6 +6,7 @@ pub enum SyncState {
     WithdrawalLastSlot,
     DepositTxLastPK,
     ContractLogs(Address),
+    DailyRewardsEpoch,
 }
 
 impl SyncState {
@@ -17,6 +18,7 @@ impl SyncState {
             SyncState::ContractLogs(address) => {
                 format!("contract_logs_{}", serde_json::to_string(&address).unwrap())
             }
+            SyncState::DailyRewardsEpoch => "daily_rewards_epoch".to_string(),
         }
     }
 }

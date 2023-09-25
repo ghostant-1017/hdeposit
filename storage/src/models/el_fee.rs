@@ -1,5 +1,4 @@
-use ethers::types::{H256, H160};
-
+use ethers::types::{H160, H256};
 
 pub struct ELFee {
     pub slot: u64,
@@ -9,5 +8,3 @@ pub struct ELFee {
     pub fee_recipient: H160,
     pub amount: u64,
 }
-
-

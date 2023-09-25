@@ -5,8 +5,8 @@ use anyhow::anyhow;
 use anyhow::Result;
 use contract::elfee::ELFee;
 use contract::elfee::SplitFeeFilter;
-use ethers::prelude::LogMeta;
 use eth2::types::BlockId;
+use ethers::prelude::LogMeta;
 use ethers::types::Address;
 use storage::models::insert_claim;
 use storage::models::query_contract_deployed_block_number;
@@ -30,12 +30,20 @@ impl<T: EthSpec> Updater<T> {
                 continue;
             }
             let tx = db.transaction().await?;
-            let from = match select_sync_state(tx.client(), &SyncState::ContractLogs(el_fee_address)).await? {
+            let from =
+                match select_sync_state(tx.client(), &SyncState::ContractLogs(el_fee_address))
+                    .await?
+                {
                     Some(from) => from,
                     None => {
-                        let block_number = query_contract_deployed_block_number(tx.client(), el_fee_address).await?;
+                        let block_number =
+                            query_contract_deployed_block_number(tx.client(), el_fee_address)
+                                .await?;
                         if block_number.is_none() {
-                            warn!("Cannot find el fee contract deploy number: {}", el_fee_address);
+                            warn!(
+                                "Cannot find el fee contract deploy number: {}",
+                                el_fee_address
+                            );
                             continue;
                         }
                         block_number.unwrap()
@@ -62,23 +70,28 @@ impl<T: EthSpec> Updater<T> {
     }
 }
 
-pub async fn query_logs_batch(contract: ELFee<Provider<Http>>, from: u64, to: u64, el_fee_address: Address) -> Result<Vec<(SplitFeeFilter, LogMeta)>> {
+pub async fn query_logs_batch(
+    contract: ELFee<Provider<Http>>,
+    from: u64,
+    to: u64,
+    el_fee_address: Address,
+) -> Result<Vec<(SplitFeeFilter, LogMeta)>> {
     let mut result = vec![];
     for i in (from..=to).step_by(10000) {
         let current_from = i;
         let current_to = (i + 10000).min(to);
         info!("Query split fee logs from {current_from} to {current_to}");
         let logs = contract
-        .split_fee_filter()
-        .address(el_fee_address.into())
-        .from_block(current_from)
-        .to_block(current_to)
-        .query_with_meta()
-        .await?;
+            .split_fee_filter()
+            .address(el_fee_address.into())
+            .from_block(current_from)
+            .to_block(current_to)
+            .query_with_meta()
+            .await?;
         result.extend(logs);
     }
     Ok(result)
-} 
+}
 
 // TODO: reuse
 pub async fn get_current_finality_block_number<T: EthSpec>(

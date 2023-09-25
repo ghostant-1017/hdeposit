@@ -1,8 +1,9 @@
-mod el_fee;
-mod withdrawals;
 mod cl_reward;
+mod el_fee;
+use crate::component::EthComponent;
 
 pub enum TaskState {
     ELFee,
-    Withdrawal,
 }
+
+pub async fn run() {}

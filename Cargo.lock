@@ -6765,6 +6765,7 @@ dependencies = [
  "anyhow",
  "backoff",
  "chrono",
+ "clap 4.4.0",
  "eth2",
  "ethers",
  "futures",
@@ -6772,6 +6773,7 @@ dependencies = [
  "storage",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

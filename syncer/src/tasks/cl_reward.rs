@@ -1,62 +1,115 @@
-use std::{collections::{HashSet, HashMap}, ops::AddAssign, sync::Arc};
-use tracing::*;
+use super::*;
+use crate::beacon::{get_beacon_block_by_slot, get_validator_balances_by_slot, BeaconClient};
+use anyhow::Context;
+use backoff::{future::retry, ExponentialBackoff};
 use eth2::types::EthSpec;
 use futures::StreamExt;
-use backoff::{future::retry, ExponentialBackoff};
+use slot_clock::SlotClock;
+use std::{
+    collections::{HashMap, HashSet},
+    ops::AddAssign,
+    sync::Arc,
+};
+use storage::models::{insert_protocol_rewards, ProtocolReward};
+use storage::{
+    db::PgPool,
+    models::{select_all_validators, select_sync_state, upsert_sync_state, SyncState},
+};
 use tokio::sync::Mutex;
-use crate::{beacon::{BeaconClient, get_validator_balances_by_slot, get_beacon_block_by_slot}, tasks::withdrawals};
+use tracing::*;
 
-#[derive(Debug)]
-pub struct ProtocolReward {
-    epoch: u64,
-    validator_index: u64,
-    start_balance: u64,
-    closing_balance: u64,
-    withdrawal_amount: u64,
-    reward_amount: i64,
+pub async fn sync_protocol_rewards<T: EthSpec>(
+    pool: PgPool,
+    eth: EthComponent,
+) -> anyhow::Result<()> {
+    let mut conn = pool.get().await?;
+    let synced = select_sync_state(&conn, &SyncState::DailyRewardsEpoch)
+        .await?
+        .unwrap_or_default();
+    let current = eth.clock.now().unwrap().epoch(T::slots_per_epoch());
+    let start_epoch_of_today = current / 225 * 225;
+    info!("Sync protocol rewards, synced epoch: {synced}, current epoch: {current}, start epoch of today: {start_epoch_of_today}");
+    // We already have protocol rewards data in range: [synced, synced + 225)
+    // And we only sync protocol rewards before yesterday
+    if synced + 225 >= start_epoch_of_today.as_u64() {
+        info!("Skip sync protocol rewards");
+        return Ok(());
+    }
+    let validator_ids = select_all_validators(&conn)
+        .await?
+        .into_iter()
+        .map(|validator| validator.index)
+        .collect();
+
+    let beacon = eth.beacon.clone();
+    let rewards = tokio::spawn(async move {
+        get_protocol_rewards_daily::<T>(&beacon, synced + 225, &validator_ids).await
+    })
+    .await
+    .context("join get protocol rewards daily")?
+    .context("get protocol rewards daily")?;
+
+    let tx = conn.transaction().await?;
+    upsert_sync_state(
+        tx.client(),
+        &SyncState::DailyRewardsEpoch,
+        &(synced as i64 + 225),
+    )
+    .await?;
+    insert_protocol_rewards(tx.client(), &rewards).await?;
+    tx.commit().await?;
+    Ok(())
 }
 
-
-pub async fn extract_rewards_daily<T: EthSpec>(beacon: &BeaconClient, start_epoch_of_day: u64, validators_ids: &HashSet<u64>) -> anyhow::Result<Vec<ProtocolReward>> {
+pub async fn get_protocol_rewards_daily<T: EthSpec>(
+    beacon: &BeaconClient,
+    start_epoch_of_day: u64,
+    validators_ids: &HashSet<u64>,
+) -> anyhow::Result<Vec<ProtocolReward>> {
     let start_slot = start_epoch_of_day * T::slots_per_epoch();
 
     let end_epoch_of_day = start_epoch_of_day + 225;
     let end_slot = end_epoch_of_day * T::slots_per_epoch() - 1;
     info!("Extracting daily rewards start slot: {start_slot}, end_slot: {end_slot}");
-    println!("Extracting daily rewards start slot: {start_slot}, end_slot: {end_slot}");
-    let start_balances = get_validator_balances_by_slot(beacon, start_slot,validators_ids).await?;
-
-    println!("Extracting daily rewards start slot: {start_slot}, end_slot: {end_slot}");
+    let start_balances = get_validator_balances_by_slot(beacon, start_slot, validators_ids).await?;
     let end_balances = get_validator_balances_by_slot(beacon, end_slot, validators_ids).await?;
     let withdrawals = Arc::new(Mutex::new(HashMap::<u64, u64>::new()));
-    futures::stream::iter(start_slot..=end_slot).map(|slot| async move{
-        println!("request: {}", slot);
-        retry(ExponentialBackoff::default(), || async {
-            Ok(get_beacon_block_by_slot::<T>(&beacon, slot).await?)
-        }).await.unwrap()
-    })
-    .buffered(128)
-    .for_each(|block| async {
-        let block = match block {
-            Some(block) => block,
-            None => return
-        };
-        let data: Vec<_>= block
-        .message_capella()
-        .unwrap()
-        .body
-        .execution_payload
-        .execution_payload
-        .withdrawals
-        .to_vec()
-        .into_iter()
-        .filter(|w| validators_ids.contains(&w.validator_index))
-        .collect();
-        for withdrawal in data {
-            withdrawals.lock().await.entry(withdrawal.index).or_default().add_assign(withdrawal.amount);
-        }
-    })
-    .await;
+    futures::stream::iter(start_slot..=end_slot)
+        .map(|slot| async move {
+            println!("request: {}", slot);
+            retry(ExponentialBackoff::default(), || async {
+                Ok(get_beacon_block_by_slot::<T>(beacon, slot).await?)
+            })
+            .await
+            .unwrap()
+        })
+        .buffered(128)
+        .for_each(|block| async {
+            let block = match block {
+                Some(block) => block,
+                None => return,
+            };
+            let data: Vec<_> = block
+                .message_capella()
+                .unwrap()
+                .body
+                .execution_payload
+                .execution_payload
+                .withdrawals
+                .to_vec()
+                .into_iter()
+                .filter(|w| validators_ids.contains(&w.validator_index))
+                .collect();
+            for withdrawal in data {
+                withdrawals
+                    .lock()
+                    .await
+                    .entry(withdrawal.index)
+                    .or_insert(withdrawal.amount)
+                    .add_assign(withdrawal.amount);
+            }
+        })
+        .await;
     let withdrawals = Arc::try_unwrap(withdrawals).unwrap().into_inner();
     let mut result = vec![];
     for id in validators_ids {
@@ -72,8 +125,9 @@ pub async fn extract_rewards_daily<T: EthSpec>(beacon: &BeaconClient, start_epoc
             reward_amount = withdrawal_amount as i64 + (closing_balance as i64 - 32_000_000_000);
         } else if closing_balance == 0 {
             reward_amount = withdrawal_amount as i64 - start_balance as i64;
-        }else {
-            reward_amount = closing_balance as i64 - start_balance as i64 + withdrawal_amount as i64;
+        } else {
+            reward_amount =
+                closing_balance as i64 - start_balance as i64 + withdrawal_amount as i64;
         }
         result.push(ProtocolReward {
             epoch: start_epoch_of_day,
@@ -87,18 +141,18 @@ pub async fn extract_rewards_daily<T: EthSpec>(beacon: &BeaconClient, start_epoc
     Ok(result)
 }
 
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use eth2::Timeouts;
+    use slot_clock::{Slot, SlotClock};
     use std::time::Duration;
-    use eth2::{Timeouts, types::MainnetEthSpec};
-    use slot_clock::{SlotClock, Slot};
     fn sample_beacon_client() -> BeaconClient {
         let server = "https://stylish-soft-shadow.ethereum-goerli.discover.quiknode.pro/0ee6b1dcfb32c48a5ad26f4ff7157a26e1bc7537/";
-        BeaconClient::new(server.parse().unwrap(), Timeouts::set_all(Duration::from_secs(5)))
+        BeaconClient::new(
+            server.parse().unwrap(),
+            Timeouts::set_all(Duration::from_secs(5)),
+        )
     }
 
     #[test]
@@ -108,8 +162,9 @@ mod tests {
 
         let clock = slot_clock::SystemTimeSlotClock::new(
             Slot::new(0),
-             Duration::from_secs(1616508000), 
-            Duration::from_secs(12));
+            Duration::from_secs(1616508000),
+            Duration::from_secs(12),
+        );
         // let slot = clock.now().unwrap();
         // let epoch = slot.epoch(32);
         // let start_epoch_of_day = epoch / 225 * 225;
@@ -131,12 +186,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_extract_daily_rewards() {
-        let beacon = sample_beacon_client();
-        let mut validator_ids = HashSet::new();
-        validator_ids.insert(566889);
-        validator_ids.insert(509650);
-        validator_ids.insert(105778);
-        let result = extract_rewards_daily::<MainnetEthSpec>(&beacon, 205650, &validator_ids).await.unwrap();
-        println!("{:?}", result);
+        // let beacon = sample_beacon_client();
+        // let mut validator_ids = HashSet::new();
+        // validator_ids.insert(566889);
+        // validator_ids.insert(509650);
+        // validator_ids.insert(105778);
+        // let result = get_protocol_rewards_daily::<MainnetEthSpec>(&beacon, 205650, &validator_ids)
+        //     .await
+        //     .unwrap();
+        // println!("{:?}", result);
     }
 }

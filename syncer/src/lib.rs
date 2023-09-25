@@ -1,5 +1,7 @@
 mod beacon;
+pub mod cli;
+mod component;
 mod geth;
-mod validator;
+mod logger;
 mod tasks;
-
+mod validator;
