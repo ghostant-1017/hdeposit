@@ -16,9 +16,6 @@ pub struct Cli {
     #[clap(long)]
     beacon: String,
 
-    #[clap(long)]
-    socket: SocketAddr,
-
     /// Database url
     #[clap(long)]
     dsn: String,
