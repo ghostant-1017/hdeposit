@@ -25,7 +25,7 @@ pub async fn extract_rewards_daily<T: EthSpec>(beacon: &BeaconClient, start_epoc
     info!("Extracting daily rewards start slot: {start_slot}, end_slot: {end_slot}");
     println!("Extracting daily rewards start slot: {start_slot}, end_slot: {end_slot}");
     let start_balances = get_validator_balances_by_slot(beacon, start_slot,validators_ids).await?;
-    
+
     println!("Extracting daily rewards start slot: {start_slot}, end_slot: {end_slot}");
     let end_balances = get_validator_balances_by_slot(beacon, end_slot, validators_ids).await?;
     let withdrawals = Arc::new(Mutex::new(HashMap::<u64, u64>::new()));
@@ -63,17 +63,17 @@ pub async fn extract_rewards_daily<T: EthSpec>(beacon: &BeaconClient, start_epoc
         let start_balance = *start_balances.get(id).unwrap_or(&0);
         let closing_balance = *end_balances.get(id).unwrap_or(&0);
         let withdrawal_amount = *withdrawals.get(id).unwrap_or(&0);
-        let mut reward_amount: i64 = 0;
+        let reward_amount: i64;
         // TODO: Is this possible?
         if start_balance == 0 && closing_balance == 0 {
             continue;
         }
         if start_balance == 0 {
             reward_amount = withdrawal_amount as i64 + (closing_balance as i64 - 32_000_000_000);
-        }
-
-        if closing_balance == 0 {
+        } else if closing_balance == 0 {
             reward_amount = withdrawal_amount as i64 - start_balance as i64;
+        }else {
+            reward_amount = closing_balance as i64 - start_balance as i64 + withdrawal_amount as i64;
         }
         result.push(ProtocolReward {
             epoch: start_epoch_of_day,
@@ -133,8 +133,10 @@ mod tests {
     async fn test_extract_daily_rewards() {
         let beacon = sample_beacon_client();
         let mut validator_ids = HashSet::new();
+        validator_ids.insert(566889);
+        validator_ids.insert(509650);
         validator_ids.insert(105778);
-        let result = extract_rewards_daily::<MainnetEthSpec>(&beacon, 203400, &validator_ids).await.unwrap();
+        let result = extract_rewards_daily::<MainnetEthSpec>(&beacon, 205650, &validator_ids).await.unwrap();
         println!("{:?}", result);
     }
 }

@@ -30,7 +30,6 @@ pub async fn get_current_finality_block_number<T: EthSpec>(
 
 pub async fn get_validator_balances_by_slot(beacon: &BeaconClient, slot: u64, validator_ids: &HashSet<u64>) -> anyhow::Result<HashMap<u64, u64>> {
     let validator_ids: Vec<_> = validator_ids.into_iter().map(|id| ValidatorId::Index(*id)).collect();
-    let balances = HashMap::<u64, u64>::new();
     let result = beacon
     .get_beacon_states_validator_balances(StateId::Slot(slot.into()), Some(validator_ids.as_slice()))
     .await
