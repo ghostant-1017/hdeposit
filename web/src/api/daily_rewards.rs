@@ -48,6 +48,23 @@ pub async fn get_daily_rewards_7days(
     .map(|id| id as i64)
     .collect();
 
+    let sql = "select 
+        sum(reward_amount)::bigint as cumulative_protocol_reward
+    from 
+        protocol_reward
+    where 
+        validator_index = any($1)
+    and 
+        epoch < $2;";
+    let row = db.query_opt(sql, &[&validator_ids, &(start_epoch.as_u64() as i64)]).await?;
+    let mut cumulative_protocol_reward = match row {
+        Some(row) => {
+            let cumulative_protocol_reward: i64 = row.get("cumulative_protocol_reward");
+            cumulative_protocol_reward
+        },
+        None => 0,
+    };
+
     let sql = "select epoch, 
     sum(reward_amount)::bigint as reward,
     sum(withdrawal_amount)::bigint as withdrawal,
@@ -58,7 +75,6 @@ pub async fn get_daily_rewards_7days(
         epoch >= $2
     GROUP BY epoch 
     ORDER BY epoch;";
-    let mut cumulative_protocol_reward = 0;
     let mut data = vec![];
     let rows = db.query(sql, 
         &[&validator_ids, &(start_epoch.as_u64() as i64)]
