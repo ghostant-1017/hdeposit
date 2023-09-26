@@ -53,8 +53,7 @@ pub async fn get_daily_rewards_7days(
     sum(withdrawal_amount) as withdrawal,
     sum(closing_balance) as closing_balance
         from protocol_reward
-    where validator_index 
-        any($1)
+    where validator_index = any($1)
     and 
         epoch >= $2
     GROUP BY epoch 
