@@ -26,9 +26,7 @@ impl<T: EthSpec> Updater<T> {
         let validator_indexes: HashSet<_> = select_all_validators(tx.client())
             .await?
             .into_iter()
-            .map(|validator| validator.index)
-            .filter(|index| index.is_some())
-            .map(|index| index.unwrap())
+            .filter_map(|validator| validator.index)
             .collect();
         // 2.Query finalized slot
         let current_finalized = self

@@ -35,8 +35,7 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
         info!("Skip sync protocol rewards");
         return Ok(());
     }
-    let validator_ids = select_all_validator_indexes(&conn)
-        .await?;
+    let validator_ids = select_all_validator_indexes(&conn).await?;
 
     let beacon = eth.beacon.clone();
     let rewards = tokio::spawn(async move {
@@ -58,7 +57,6 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     Ok(())
 }
 
-
 /// For example, caculate rewards
 /// UTC TIME: 2023-09-21 14:00:00UTC - 2023-09-22 14:00:00UTC
 /// SLOT RANGE: 6,566,400 - 6,573,600
@@ -76,7 +74,8 @@ pub async fn get_protocol_rewards_daily<T: EthSpec>(
     let end_epoch_of_day = start_epoch_of_day + 225;
     let end_slot = end_epoch_of_day * T::slots_per_epoch();
     info!("Extracting daily rewards start slot: {start_slot}, end_slot: {end_slot}");
-    let start_balances = get_validator_balances_by_slot(beacon, start_slot - 1, validators_ids).await?;
+    let start_balances =
+        get_validator_balances_by_slot(beacon, start_slot - 1, validators_ids).await?;
     let end_balances = get_validator_balances_by_slot(beacon, end_slot - 1, validators_ids).await?;
     let withdrawals = Arc::new(Mutex::new(HashMap::<u64, u64>::new()));
     futures::stream::iter(start_slot..end_slot)

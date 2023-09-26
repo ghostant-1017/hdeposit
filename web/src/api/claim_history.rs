@@ -33,13 +33,14 @@ pub async fn get_claim_history(
         None => return Ok(Json(Response { data: vec![] })),
     };
     // 2. query el_fee_contract logs
-    let data = select_claim_by_address(&db, address).await?
-    .into_iter()
-    .map(|(log, meta)| ClaimInfo {
-        block_number: meta.block_number.as_u64(),
-        tx_hash: meta.transaction_hash,
-        amount: log.user_amount.as_u64(),
-    })
-    .collect();
+    let data = select_claim_by_address(&db, address)
+        .await?
+        .into_iter()
+        .map(|(log, meta)| ClaimInfo {
+            block_number: meta.block_number.as_u64(),
+            tx_hash: meta.transaction_hash,
+            amount: log.user_amount.as_u64(),
+        })
+        .collect();
     Ok(Json(Response { data }))
 }

@@ -20,7 +20,7 @@ impl SyncState {
                 format!("contract_logs_{}", serde_json::to_string(&address).unwrap())
             }
             SyncState::DailyRewardsEpoch => "daily_rewards_epoch".to_string(),
-            SyncState::ELFeeLastSlot => "elfee_last_slot".to_string()
+            SyncState::ELFeeLastSlot => "elfee_last_slot".to_string(),
         }
     }
 }

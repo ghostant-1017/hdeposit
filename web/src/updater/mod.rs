@@ -10,9 +10,9 @@ type DepositContract = DepositContractABI<Provider<Http>>;
 
 mod claim_history;
 mod deposit_events;
+mod el_fee;
 mod validators;
 mod withdrawals;
-mod el_fee;
 pub struct Updater<T: EthSpec> {
     beacon: BeaconNodeHttpClient,
     eth1_client: Provider<Http>,

@@ -1,12 +1,10 @@
-use std::time::Duration;
-
+use super::*;
 use anyhow::anyhow;
-use chrono::{Days, NaiveDateTime};
+
 use eth2::types::Hash256;
-use indexmap::IndexMap;
+
 use slot_clock::Slot;
 use storage::models::select_wc_validator_indexes;
-use super::*;
 
 const SLOTS_PER_DAY: u64 = 7200;
 
@@ -22,7 +20,7 @@ pub struct WalletDailyReward {
     withdrawal: i64,
     protocol_reward: i64,
     cumulative_protocol_reward: i64,
-    closing_balance: i64
+    closing_balance: i64,
 }
 
 #[derive(Debug, Serialize)]
@@ -44,10 +42,10 @@ pub async fn get_daily_rewards_7days(
     let start_epoch = end_epoch - 225 * 7;
 
     let validator_ids: Vec<i64> = select_wc_validator_indexes(&db, wc)
-    .await?
-    .into_iter()
-    .map(|id| id as i64)
-    .collect();
+        .await?
+        .into_iter()
+        .map(|id| id as i64)
+        .collect();
 
     let sql = "select 
         sum(reward_amount)::bigint as cumulative_protocol_reward
@@ -57,7 +55,9 @@ pub async fn get_daily_rewards_7days(
         validator_index = any($1)
     and 
         epoch < $2;";
-    let row = db.query_one(sql, &[&validator_ids, &(start_epoch.as_u64() as i64)]).await?;
+    let row = db
+        .query_one(sql, &[&validator_ids, &(start_epoch.as_u64() as i64)])
+        .await?;
     let cumulative_protocol_reward: Option<i64> = row.get("cumulative_protocol_reward");
     let mut cumulative_protocol_reward = cumulative_protocol_reward.unwrap_or_default();
 
@@ -72,11 +72,11 @@ pub async fn get_daily_rewards_7days(
     GROUP BY epoch 
     ORDER BY epoch;";
     let mut data = vec![];
-    let rows = db.query(sql, 
-        &[&validator_ids, &(start_epoch.as_u64() as i64)]
-    ).await?;
+    let rows = db
+        .query(sql, &[&validator_ids, &(start_epoch.as_u64() as i64)])
+        .await?;
     let total_items = rows.len() as i64;
-    for row in rows { 
+    for row in rows {
         let epoch: i64 = row.get("epoch");
         let protocol_reward: i64 = row.get("reward");
         let withdrawal: i64 = row.get("withdrawal");
@@ -88,7 +88,7 @@ pub async fn get_daily_rewards_7days(
             protocol_reward,
             withdrawal,
             closing_balance,
-            cumulative_protocol_reward
+            cumulative_protocol_reward,
         })
     }
     Ok(Json(Response { total_items, data }))
@@ -103,9 +103,7 @@ pub fn epoch_to_timestamp(clock: &SystemTimeSlotClock, epoch: u64) -> anyhow::Re
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    #[test]
-    fn test_map() {
 
-    }
+    #[test]
+    fn test_map() {}
 }

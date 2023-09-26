@@ -1,5 +1,3 @@
-use std::net::SocketAddr;
-
 use clap::Parser;
 use eth2::types::MainnetEthSpec;
 use storage::db::initial_pg_pool;

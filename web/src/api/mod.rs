@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use axum::routing::post;
-use axum::{extract::Query, routing::get, Router, extract::Path};
+use axum::{extract::Path, extract::Query, routing::get, Router};
 use axum::{extract::State, Json};
 use eth2::types::ChainSpec;
 use eth2::BeaconNodeHttpClient;
@@ -56,7 +56,10 @@ impl Server {
             .route("/api/v1/exit", post(post_exit))
             .route("/api/v1/validators", get(get_validators))
             .route("/api/v1/balance", get(get_balance))
-            .route("/api/v1/wallet/:wc/protocol_rewards", get(get_daily_rewards_7days))
+            .route(
+                "/api/v1/wallet/:wc/protocol_rewards",
+                get(get_daily_rewards_7days),
+            )
             .route("/api/v1/claim_history", get(get_claim_history))
             .with_state(self);
         info!("Server start at: {}", addr);

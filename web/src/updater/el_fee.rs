@@ -1,12 +1,15 @@
 use std::collections::HashSet;
 
-use super::{*, withdrawals::get_beacon_block_by_slot};
-use anyhow::{Result, anyhow};
+use super::{withdrawals::get_beacon_block_by_slot, *};
+use anyhow::{anyhow, Result};
 use bb8_postgres::tokio_postgres::Client as PgClient;
 use eth2::types::{BlockId, SignedBeaconBlock};
 use ethers::{providers::Middleware, types::TransactionReceipt};
 use futures::StreamExt;
-use storage::models::{select_sync_state, SyncState, insert_el_fee, ELFee, select_all_validator_indexes, upsert_sync_state};
+use storage::models::{
+    insert_el_fee, select_all_validator_indexes, select_sync_state, upsert_sync_state, ELFee,
+    SyncState,
+};
 use tokio::sync::Mutex;
 use tracing::info;
 
@@ -16,8 +19,8 @@ impl<T: EthSpec> Updater<T> {
         // 1.Select last synced slot, let from = synced + 1;
         let tx = conn.transaction().await?;
         let synced = select_sync_state(tx.client(), &SyncState::ELFeeLastSlot)
-        .await?
-        .unwrap_or(self.start);
+            .await?
+            .unwrap_or(self.start);
         let from = synced + 1;
         // 2.Query current finality slot, let to = finality;
         let finalized = self
@@ -28,7 +31,7 @@ impl<T: EthSpec> Updater<T> {
             .ok_or(anyhow!("get finalized unwrap"))?;
         let to = finalized.data.slot().as_u64();
         if synced == to {
-            return Ok(())
+            return Ok(());
         }
         // 3.Get slots [from, to]
         let err_ctx = Mutex::new(Option::default());
@@ -47,7 +50,12 @@ impl<T: EthSpec> Updater<T> {
                     return;
                 }
                 let block = block.unwrap().data;
-                if let Err(err) = Self::process_slot_el_fee(tx.client(), &self.eth1_client, &block, &validator_indexes)
+                if let Err(err) = Self::process_slot_el_fee(
+                    tx.client(),
+                    &self.eth1_client,
+                    &block,
+                    &validator_indexes,
+                )
                 .await
                 {
                     *err_ctx.lock().await = Some(err);
@@ -59,19 +67,41 @@ impl<T: EthSpec> Updater<T> {
         Ok(())
     }
 
-    pub async fn process_slot_el_fee(db: &PgClient, eth1: &Provider<Http>, block: &SignedBeaconBlock<T>, validator_indexes: &HashSet<u64>) -> Result<()> {
-        let message = block.message_capella().map_err(|_| anyhow!("not capella message"))?;
+    pub async fn process_slot_el_fee(
+        db: &PgClient,
+        eth1: &Provider<Http>,
+        block: &SignedBeaconBlock<T>,
+        validator_indexes: &HashSet<u64>,
+    ) -> Result<()> {
+        let message = block
+            .message_capella()
+            .map_err(|_| anyhow!("not capella message"))?;
         let proposer_index = message.proposer_index;
         if !validator_indexes.contains(&proposer_index) {
-            return Ok(())
+            return Ok(());
         }
         let slot = message.slot.as_u64();
-        let fee_recipient = message.body.execution_payload.execution_payload.fee_recipient;
-        let block_number = message.body.execution_payload.execution_payload.block_number;
-        let block_hash = message.body.execution_payload.execution_payload.block_hash.into_root();
+        let fee_recipient = message
+            .body
+            .execution_payload
+            .execution_payload
+            .fee_recipient;
+        let block_number = message
+            .body
+            .execution_payload
+            .execution_payload
+            .block_number;
+        let block_hash = message
+            .body
+            .execution_payload
+            .execution_payload
+            .block_hash
+            .into_root();
         let receipts = eth1.get_block_receipts(block_number).await?;
         let amount = caculate_block_fee(receipts)?;
-        info!("Found 32stake propose a slot, index: {proposer_index}, fee_recipient: {fee_recipient}");
+        info!(
+            "Found 32stake propose a slot, index: {proposer_index}, fee_recipient: {fee_recipient}"
+        );
         let el_fee = ELFee {
             slot,
             block_number,
@@ -88,8 +118,14 @@ impl<T: EthSpec> Updater<T> {
 fn caculate_block_fee(receipts: Vec<TransactionReceipt>) -> anyhow::Result<u64> {
     let mut total = 0;
     for receipt in receipts {
-        let gas_price = receipt.effective_gas_price.ok_or(anyhow!("effective_gas_price not found"))?.as_u64();
-        let gas_used = receipt.gas_used.ok_or(anyhow!("gas_used not found"))?.as_u64();
+        let gas_price = receipt
+            .effective_gas_price
+            .ok_or(anyhow!("effective_gas_price not found"))?
+            .as_u64();
+        let gas_used = receipt
+            .gas_used
+            .ok_or(anyhow!("gas_used not found"))?
+            .as_u64();
         total += gas_price * gas_used;
     }
     Ok(total)

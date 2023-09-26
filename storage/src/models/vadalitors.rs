@@ -29,7 +29,7 @@ impl TryFrom<Row> for HellmanValidator {
             None => None,
         };
         Ok(Self {
-            index: index.and_then(|index| Some(index as u64)),
+            index: index.map(|index| index as u64),
             pubkey: serde_json::from_str(&pubkey)?,
             withdrawal_credentials: serde_json::from_str(&wc)?,
             amount: amount as u64,
@@ -87,7 +87,7 @@ pub async fn select_all_validator_indexes(client: &Client) -> Result<HashSet<u64
         let index: i64 = row.get("index");
         result.insert(index as u64);
     }
-    return Ok(result)
+    Ok(result)
 }
 
 pub async fn select_wc_validator_indexes(client: &Client, wc: Hash256) -> Result<HashSet<u64>> {
@@ -98,9 +98,8 @@ pub async fn select_wc_validator_indexes(client: &Client, wc: Hash256) -> Result
         let index: i64 = row.get("index");
         result.insert(index as u64);
     }
-    return Ok(result)
-} 
-
+    Ok(result)
+}
 
 pub async fn upsert_validators_by_logs(
     client: &Client,
