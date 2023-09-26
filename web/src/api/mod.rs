@@ -62,7 +62,7 @@ impl Server {
                 get(get_daily_rewards_7days),
             )
             .route("/api/v1/claim_history", get(get_claim_history))
-            .route("/api/v1/estimate_rewards", get(get_estimate_rewards))
+            .route("/api/v1/staking/estimate_rewards", get(get_estimate_rewards))
             .with_state(self);
         info!("Server start at: {}", addr);
         axum::Server::bind(&addr)
