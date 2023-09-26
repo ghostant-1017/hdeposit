@@ -1,10 +1,10 @@
 use super::*;
 use crate::beacon::{get_beacon_block_by_slot, get_validator_balances_by_slot, BeaconClient, get_current_finalized_epoch};
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 use backoff::{future::retry, ExponentialBackoff};
 use eth2::types::EthSpec;
 use futures::StreamExt;
-use slot_clock::SlotClock;
+use slot_clock::{SlotClock, SystemTimeSlotClock, Slot};
 use std::{
     collections::{HashMap, HashSet},
     ops::AddAssign,
@@ -29,17 +29,25 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     let current = eth.clock.now().unwrap().epoch(T::slots_per_epoch());
     let start_epoch_of_today = current / 225 * 225;
     let current_finalized = get_current_finalized_epoch::<T>(&eth.beacon).await?;
+    info!("Sync protocol rewards, 
+    synced epoch: {synced}, 
+    finalized_epoch: {current_finalized},
+    current epoch: {current}, 
+    start epoch of today: {start_epoch_of_today}");
+
     // Only sync the finalized epoch
-    if current_finalized < start_epoch_of_today {
-        return Ok(())
-    }
-    info!("Sync protocol rewards, synced epoch: {synced}, current epoch: {current}, start epoch of today: {start_epoch_of_today}");
     // We already have protocol rewards data in range: [synced, synced + 225)
     // And we only sync protocol rewards before yesterday
-    if synced + 225 >= start_epoch_of_today.as_u64() {
-        info!("Skip sync protocol rewards");
-        return Ok(());
+    if synced + 225 == start_epoch_of_today.as_u64() {
+        let ts = epoch_to_timestamp(&eth.clock, synced)? as i64;
+        let synced = chrono::NaiveDateTime::from_timestamp_opt(ts, 0).ok_or(anyhow!("time err"))?;
+        info!("Protocol rewards has synced to: {}", synced);
     }
+    if current_finalized < start_epoch_of_today {
+        info!("Waiting for {start_epoch_of_today} to be finalized");
+        return Ok(())
+    }
+
     let validator_ids = select_all_validator_indexes(&conn).await?;
 
     let beacon = eth.beacon.clone();
@@ -147,6 +155,13 @@ pub async fn get_protocol_rewards_daily<T: EthSpec>(
         })
     }
     Ok(result)
+}
+
+pub fn epoch_to_timestamp(clock: &SystemTimeSlotClock, epoch: u64) -> anyhow::Result<u64> {
+    // TODO: replace `slots_per_epoch` of
+    let slot = Slot::new(epoch * 32);
+    let time = clock.start_of(slot).ok_or(anyhow!("start of slot error"))?;
+    Ok(time.as_secs())
 }
 
 #[cfg(test)]
