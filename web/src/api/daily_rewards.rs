@@ -4,7 +4,7 @@ use anyhow::anyhow;
 use eth2::types::Hash256;
 
 use slot_clock::Slot;
-use storage::models::select_wc_validator_indexes;
+use storage::models::{select_wc_validator_indexes, select_sync_state, SyncState};
 
 const SLOTS_PER_DAY: u64 = 7200;
 
@@ -36,11 +36,11 @@ pub async fn get_daily_rewards_7days(
     let wc = params.wc;
     let db = server.pool.get().await?;
     let clock = server.clock;
-    let slot = clock.now().unwrap();
-    let epoch = slot.epoch(32);
-    let end_epoch = epoch / 225 * 225;
+    // end_epoch is Yesterday's last one epoch
+    let end_epoch = select_sync_state(&db, &SyncState::DailyRewardsEpoch)
+    .await?
+    .ok_or(anyhow!("missing protocol rewards"))? + 225;
     let start_epoch = end_epoch - 225 * 7;
-
     let validator_ids: Vec<i64> = select_wc_validator_indexes(&db, wc)
         .await?
         .into_iter()
@@ -56,7 +56,7 @@ pub async fn get_daily_rewards_7days(
     and 
         epoch < $2;";
     let row = db
-        .query_one(sql, &[&validator_ids, &(start_epoch.as_u64() as i64)])
+        .query_one(sql, &[&validator_ids, &(start_epoch as i64)])
         .await?;
     let cumulative_protocol_reward: Option<i64> = row.get("cumulative_protocol_reward");
     let mut cumulative_protocol_reward = cumulative_protocol_reward.unwrap_or_default();
@@ -73,7 +73,7 @@ pub async fn get_daily_rewards_7days(
     ORDER BY epoch;";
     let mut data = vec![];
     let rows = db
-        .query(sql, &[&validator_ids, &(start_epoch.as_u64() as i64)])
+        .query(sql, &[&validator_ids, &(start_epoch as i64)])
         .await?;
     let total_items = rows.len() as i64;
     for row in rows {

@@ -1,5 +1,5 @@
 use super::*;
-use crate::beacon::{get_beacon_block_by_slot, get_validator_balances_by_slot, BeaconClient};
+use crate::beacon::{get_beacon_block_by_slot, get_validator_balances_by_slot, BeaconClient, get_current_finalized_epoch};
 use anyhow::Context;
 use backoff::{future::retry, ExponentialBackoff};
 use eth2::types::EthSpec;
@@ -28,6 +28,11 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
         .unwrap_or_default();
     let current = eth.clock.now().unwrap().epoch(T::slots_per_epoch());
     let start_epoch_of_today = current / 225 * 225;
+    let current_finalized = get_current_finalized_epoch::<T>(&eth.beacon).await?;
+    // Only sync the finalized epoch
+    if current_finalized < start_epoch_of_today {
+        return Ok(())
+    }
     info!("Sync protocol rewards, synced epoch: {synced}, current epoch: {current}, start epoch of today: {start_epoch_of_today}");
     // We already have protocol rewards data in range: [synced, synced + 225)
     // And we only sync protocol rewards before yesterday
