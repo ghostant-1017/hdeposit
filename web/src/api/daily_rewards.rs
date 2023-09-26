@@ -17,6 +17,7 @@ pub struct Params {
 
 #[derive(Debug, Serialize)]
 pub struct WalletDailyReward {
+    unix: u64,
     epoch: i64,
     withdrawal: i64,
     protocol_reward: i64,
@@ -82,6 +83,7 @@ pub async fn get_daily_rewards_7days(
         let closing_balance: i64 = row.get("closing_balance");
         cumulative_protocol_reward += protocol_reward;
         data.push(WalletDailyReward {
+            unix: epoch_to_timestamp(&clock, epoch as u64)?,
             epoch,
             protocol_reward,
             withdrawal,
@@ -90,6 +92,13 @@ pub async fn get_daily_rewards_7days(
         })
     }
     Ok(Json(Response { total_items, data }))
+}
+
+pub fn epoch_to_timestamp(clock: &SystemTimeSlotClock, epoch: u64) -> anyhow::Result<u64> {
+    // TODO: replace `slots_per_epoch` of
+    let slot = Slot::new(epoch * 32);
+    let time = clock.start_of(slot).ok_or(anyhow!("start of slot error"))?;
+    Ok(time.as_secs())
 }
 
 #[cfg(test)]
