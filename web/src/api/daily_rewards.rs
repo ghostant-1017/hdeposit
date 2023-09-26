@@ -1,6 +1,7 @@
 use super::*;
 use anyhow::anyhow;
 
+use bb8_postgres::tokio_postgres::Client;
 use eth2::types::Hash256;
 
 use slot_clock::Slot;
@@ -36,11 +37,16 @@ pub async fn get_daily_rewards_7days(
     let wc = params.wc;
     let db = server.pool.get().await?;
     let clock = server.clock;
-    // end_epoch is Yesterday's last one epoch
+    let data = get_recent_n_days_rewards(&db, &clock, 15, wc).await?;
+    let total_items = data.len() as i64;
+    Ok(Json(Response { total_items, data }))
+}
+
+async fn get_recent_n_days_rewards(db: &Client, clock: &SystemTimeSlotClock, n: u64, wc: Hash256) -> anyhow::Result<Vec<WalletDailyReward>> {
     let end_epoch = select_sync_state(&db, &SyncState::DailyRewardsEpoch)
     .await?
     .ok_or(anyhow!("missing protocol rewards"))? + 225;
-    let start_epoch = end_epoch - 225 * 7;
+    let start_epoch = end_epoch - 225 * n;
     let validator_ids: Vec<i64> = select_wc_validator_indexes(&db, wc)
         .await?
         .into_iter()
@@ -75,7 +81,6 @@ pub async fn get_daily_rewards_7days(
     let rows = db
         .query(sql, &[&validator_ids, &(start_epoch as i64)])
         .await?;
-    let total_items = rows.len() as i64;
     for row in rows {
         let epoch: i64 = row.get("epoch");
         let protocol_reward: i64 = row.get("reward");
@@ -91,7 +96,7 @@ pub async fn get_daily_rewards_7days(
             cumulative_protocol_reward,
         })
     }
-    Ok(Json(Response { total_items, data }))
+    Ok(data)
 }
 
 pub fn epoch_to_timestamp(clock: &SystemTimeSlotClock, epoch: u64) -> anyhow::Result<u64> {
