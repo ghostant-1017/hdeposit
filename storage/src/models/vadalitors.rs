@@ -80,7 +80,7 @@ pub async fn select_all_validators(client: &Client) -> Result<Vec<HellmanValidat
 }
 
 pub async fn select_all_validator_indexes(client: &Client) -> Result<HashSet<u64>> {
-    let sql = "select index from hellman_validators is not null;";
+    let sql = "select index from hellman_validators where index is not null;";
     let rows = client.query(sql, &[]).await?;
     let mut result = HashSet::new();
     for row in rows {
