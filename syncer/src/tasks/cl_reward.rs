@@ -73,7 +73,6 @@ pub async fn get_protocol_rewards_daily<T: EthSpec>(
     let withdrawals = Arc::new(Mutex::new(HashMap::<u64, u64>::new()));
     futures::stream::iter(start_slot..=end_slot)
         .map(|slot| async move {
-            println!("request: {}", slot);
             retry(ExponentialBackoff::default(), || async {
                 Ok(get_beacon_block_by_slot::<T>(beacon, slot).await?)
             })
@@ -102,7 +101,7 @@ pub async fn get_protocol_rewards_daily<T: EthSpec>(
                     .lock()
                     .await
                     .entry(withdrawal.index)
-                    .or_insert(withdrawal.amount)
+                    .or_default()
                     .add_assign(withdrawal.amount);
             }
         })
