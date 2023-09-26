@@ -15,7 +15,7 @@ pub async fn insert_protocol_rewards(client: &Client, batch: &Vec<ProtocolReward
         client
             .execute(
                 "insert into protocol_reward
-        (epoch, validator_index, start_balance, closing_balance, withdrawl_amount, reward_amount)
+        (epoch, validator_index, start_balance, closing_balance, withdrawal_amount, reward_amount)
         values
         ($1, $2, $3, $4, $5, $6);
         ",
