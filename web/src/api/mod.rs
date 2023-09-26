@@ -12,16 +12,17 @@ mod daily_rewards;
 mod err;
 mod exit;
 mod validators;
+mod estimate_rewards;
 use err::*;
 use slot_clock::SlotClock;
 use slot_clock::SystemTimeSlotClock;
 use storage::db::PgPool;
 use tracing::info;
-
 use crate::api::balance::get_balance;
 use crate::api::claim_history::get_claim_history;
 use crate::api::daily_rewards::get_daily_rewards_7days;
 use crate::api::exit::post_exit;
+use crate::api::estimate_rewards::get_estimate_rewards;
 
 use self::validators::get_validators;
 
@@ -61,6 +62,7 @@ impl Server {
                 get(get_daily_rewards_7days),
             )
             .route("/api/v1/claim_history", get(get_claim_history))
+            .route("/api/v1/estimate_rewards", get(get_estimate_rewards))
             .with_state(self);
         info!("Server start at: {}", addr);
         axum::Server::bind(&addr)
