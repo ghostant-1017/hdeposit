@@ -32,7 +32,7 @@ pub struct Response {
 }
 
 pub async fn get_daily_rewards_7days(
-    Query(params): Query<Params>,
+    Path(params): Path<Params>,
     State(server): State<Server>,
 ) -> Result<Json<Response>, AppError> {
     let wc = params.wc;
