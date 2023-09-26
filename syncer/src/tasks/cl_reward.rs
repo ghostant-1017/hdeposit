@@ -58,20 +58,28 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     Ok(())
 }
 
+
+/// For example, caculate rewards
+/// UTC TIME: 2023-09-21 14:00:00UTC - 2023-09-22 14:00:00UTC
+/// SLOT RANGE: 6,566,400 - 6,573,600
+/// EPOCH RANGE: 205,200 - 205,425
+/// We should read the validator_state at slot: 6,566,400 - 1 = [6,566,399] as the start_balance
+/// read the validator_state at slot: 6,573,600 - 1 = [6,573,599] as the end_balance
+/// We must read slots from [6,566,400, 6,573,599] to get withdrawals
+///  
 pub async fn get_protocol_rewards_daily<T: EthSpec>(
     beacon: &BeaconClient,
     start_epoch_of_day: u64,
     validators_ids: &HashSet<u64>,
 ) -> anyhow::Result<Vec<ProtocolReward>> {
     let start_slot = start_epoch_of_day * T::slots_per_epoch();
-
     let end_epoch_of_day = start_epoch_of_day + 225;
-    let end_slot = end_epoch_of_day * T::slots_per_epoch() - 1;
+    let end_slot = end_epoch_of_day * T::slots_per_epoch();
     info!("Extracting daily rewards start slot: {start_slot}, end_slot: {end_slot}");
-    let start_balances = get_validator_balances_by_slot(beacon, start_slot, validators_ids).await?;
-    let end_balances = get_validator_balances_by_slot(beacon, end_slot, validators_ids).await?;
+    let start_balances = get_validator_balances_by_slot(beacon, start_slot - 1, validators_ids).await?;
+    let end_balances = get_validator_balances_by_slot(beacon, end_slot - 1, validators_ids).await?;
     let withdrawals = Arc::new(Mutex::new(HashMap::<u64, u64>::new()));
-    futures::stream::iter(start_slot..=end_slot)
+    futures::stream::iter(start_slot..end_slot)
         .map(|slot| async move {
             retry(ExponentialBackoff::default(), || async {
                 Ok(get_beacon_block_by_slot::<T>(beacon, slot).await?)
