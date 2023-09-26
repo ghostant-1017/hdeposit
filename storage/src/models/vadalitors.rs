@@ -90,6 +90,18 @@ pub async fn select_all_validator_indexes(client: &Client) -> Result<HashSet<u64
     return Ok(result)
 }
 
+pub async fn select_wc_validator_indexes(client: &Client, wc: Hash256) -> Result<HashSet<u64>> {
+    let sql = "select index from hellman_validators where index is not null and  withdrawal_credentials = $1;";
+    let rows = client.query(sql, &[&serde_json::to_string(&wc)?]).await?;
+    let mut result = HashSet::new();
+    for row in rows {
+        let index: i64 = row.get("index");
+        result.insert(index as u64);
+    }
+    return Ok(result)
+} 
+
+
 pub async fn upsert_validators_by_logs(
     client: &Client,
     logs: &Vec<DepositEventFilter>,
