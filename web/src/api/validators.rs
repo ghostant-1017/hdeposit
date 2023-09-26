@@ -4,6 +4,7 @@ use super::*;
 
 use bb8_postgres::tokio_postgres::Client;
 use eth2::types::{Hash256, ValidatorData, ValidatorStatus};
+use ethers::types::H256;
 use storage::models::{
     select_validators_by_credentials, select_withdrawals_by_validator_index, HellmanValidator,
 };
@@ -17,9 +18,10 @@ pub struct Params {
 
 #[derive(Serialize)]
 pub struct ValidatorInfo {
-    pub index: u64,
+    pub index: Option<u64>,
     pub balance: u64,
     pub status: ValidatorStatus,
+    pub withdrawal_credentials: H256,
     pub accumulative_protocol_reward: u64,
     pub cl_apr: f64,
     pub validator_data: Option<ValidatorData>,
@@ -35,6 +37,7 @@ impl ValidatorInfo {
             Ok(Self {
                 index: validator.index,
                 balance: validator.amount,
+                withdrawal_credentials: validator.withdrawal_credentials,
                 status: ValidatorStatus::Pending,
                 accumulative_protocol_reward: 0,
                 cl_apr: 0.0,
@@ -43,7 +46,7 @@ impl ValidatorInfo {
         } else {
             let validator_data = validator.data.unwrap();
             let accumulative_protocol_reward: u64 =
-                select_withdrawals_by_validator_index(client, validator.index)
+                select_withdrawals_by_validator_index(client, validator_data.index)
                     .await?
                     .into_iter()
                     .map(|w| w.withdrawal.amount)
@@ -57,6 +60,7 @@ impl ValidatorInfo {
             .unwrap_or_default();
             Ok(Self {
                 index: validator.index,
+                withdrawal_credentials: validator.withdrawal_credentials,
                 balance: validator.amount,
                 status: validator_data.status.superstatus(),
                 accumulative_protocol_reward,

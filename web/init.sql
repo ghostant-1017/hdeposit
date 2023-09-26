@@ -4,8 +4,9 @@ CREATE TABLE sync_states (
 )
 
 CREATE TABLE hellman_validators (
-    index BIGINT PRIMARY KEY,
-    pubkey VARCHAR NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    index BIGINT,
+    pubkey VARCHAR UNIQUE NOT NULL,
     withdrawal_credentials VARCHAR NOT NULL,
     amount BIGINT NOT NULL,
     data JSON

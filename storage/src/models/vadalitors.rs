@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::{anyhow, Result};
 use bb8_postgres::tokio_postgres::{Client, Row};
 use contract::deposit::DepositEventFilter;
@@ -6,7 +8,7 @@ use ethers::types::U64;
 use lighthouse_types::{Hash256, PublicKey};
 
 pub struct HellmanValidator {
-    pub index: u64,
+    pub index: Option<u64>,
     pub pubkey: PublicKey,
     pub withdrawal_credentials: Hash256,
     pub amount: u64,
@@ -17,7 +19,7 @@ impl TryFrom<Row> for HellmanValidator {
     type Error = anyhow::Error;
 
     fn try_from(row: Row) -> Result<Self> {
-        let index: i64 = row.get("index");
+        let index: Option<i64> = row.get("index");
         let pubkey: String = row.get("pubkey");
         let wc: String = row.get("withdrawal_credentials");
         let amount: i64 = row.get("amount");
@@ -27,7 +29,7 @@ impl TryFrom<Row> for HellmanValidator {
             None => None,
         };
         Ok(Self {
-            index: index as u64,
+            index: index.and_then(|index| Some(index as u64)),
             pubkey: serde_json::from_str(&pubkey)?,
             withdrawal_credentials: serde_json::from_str(&wc)?,
             amount: amount as u64,
@@ -39,7 +41,7 @@ impl TryFrom<Row> for HellmanValidator {
 pub async fn upsert_validators(client: &Client, validators: &Vec<ValidatorData>) -> Result<()> {
     let sql = "insert into hellman_validators(index,pubkey,withdrawal_credentials,amount,data) 
     values($1, $2, $3, $4,$5) 
-    on conflict (index) do update set pubkey=$2,withdrawal_credentials=$3,amount=$4,data=$5;";
+    on conflict (pubkey) do update set index=$1,pubkey=$2,withdrawal_credentials=$3,amount=$4,data=$5;";
     for validator in validators {
         // TODO: Optimize sql
         let index = validator.index as i64;
@@ -77,15 +79,25 @@ pub async fn select_all_validators(client: &Client) -> Result<Vec<HellmanValidat
     Ok(result)
 }
 
+pub async fn select_all_validator_indexes(client: &Client) -> Result<HashSet<u64>> {
+    let sql = "select index from hellman_validators where index != null;";
+    let rows = client.query(sql, &[]).await?;
+    let mut result = HashSet::new();
+    for row in rows {
+        let index: i64 = row.get("index");
+        result.insert(index as u64);
+    }
+    return Ok(result)
+}
+
 pub async fn upsert_validators_by_logs(
     client: &Client,
     logs: &Vec<DepositEventFilter>,
 ) -> Result<()> {
-    let sql = "insert into hellman_validators(index,pubkey,withdrawal_credentials,amount) 
-    values($1, $2, $3, $4) 
-    on conflict (index) do nothing";
+    let sql = "insert into hellman_validators(pubkey,withdrawal_credentials,amount) 
+    values($1, $2, $3) 
+    on conflict (pubkey) do nothing";
     for log in logs {
-        let index = U64::from_little_endian(&log.index).as_u64() as i64;
         let pubey = PublicKey::deserialize(&log.pubkey).map_err(|err| anyhow!("{err:?}"))?;
         let wc = Hash256::from_slice(&log.withdrawal_credentials);
         let amount = U64::from_little_endian(&log.amount).as_u64() as i64;
@@ -93,7 +105,6 @@ pub async fn upsert_validators_by_logs(
             .execute(
                 sql,
                 &[
-                    &index,
                     &serde_json::to_string(&pubey)?,
                     &serde_json::to_string(&wc)?,
                     &amount,

@@ -27,6 +27,8 @@ impl<T: EthSpec> Updater<T> {
             .await?
             .into_iter()
             .map(|validator| validator.index)
+            .filter(|index| index.is_some())
+            .map(|index| index.unwrap())
             .collect();
         // 2.Query finalized slot
         let current_finalized = self

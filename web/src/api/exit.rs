@@ -65,7 +65,7 @@ pub async fn post_exit(
         .data
         .ok_or(anyhow!("Validator status unknown"))?
         .status;
-    if validator_status != ValidatorStatus::Active {
+    if validator_status.superstatus() != ValidatorStatus::Active {
         return Err(anyhow!("Validator is not active, status: {}", validator_status).into());
     }
 

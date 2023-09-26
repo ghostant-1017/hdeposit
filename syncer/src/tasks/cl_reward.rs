@@ -13,7 +13,7 @@ use std::{
 use storage::models::{insert_protocol_rewards, ProtocolReward};
 use storage::{
     db::PgPool,
-    models::{select_all_validators, select_sync_state, upsert_sync_state, SyncState},
+    models::{select_all_validator_indexes, select_sync_state, upsert_sync_state, SyncState},
 };
 use tokio::sync::Mutex;
 use tracing::*;
@@ -35,11 +35,8 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
         info!("Skip sync protocol rewards");
         return Ok(());
     }
-    let validator_ids = select_all_validators(&conn)
-        .await?
-        .into_iter()
-        .map(|validator| validator.index)
-        .collect();
+    let validator_ids = select_all_validator_indexes(&conn)
+        .await?;
 
     let beacon = eth.beacon.clone();
     let rewards = tokio::spawn(async move {
