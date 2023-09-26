@@ -66,8 +66,8 @@ pub async fn get_daily_rewards_7days(
     let total_items = rows.len() as i64;
     for row in rows { 
         let epoch: i64 = row.get("epoch");
-        let protocol_reward: i32 = row.get("reward");
-        let withdrawal: i32 = row.get("withdrawal");
+        let protocol_reward: i64 = row.get("reward");
+        let withdrawal: i64 = row.get("withdrawal");
         let closing_balance: i64 = row.get("closing_balance");
         cumulative_protocol_reward += protocol_reward;
         data.push(WalletDailyReward {
