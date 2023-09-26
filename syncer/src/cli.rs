@@ -20,10 +20,6 @@ pub struct Cli {
 
     #[clap(long)]
     start: u64,
-
-    /// Keystore Password
-    #[clap(long)]
-    password: String,
 }
 
 impl Cli {
