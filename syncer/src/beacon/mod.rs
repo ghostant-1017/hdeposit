@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use anyhow::anyhow;
 use eth2::types::{BlockId, EthSpec, SignedBeaconBlock, StateId, ValidatorId};
 use eth2::BeaconNodeHttpClient;
+use tracing::info;
 
 pub type BeaconClient = BeaconNodeHttpClient;
 

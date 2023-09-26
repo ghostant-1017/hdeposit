@@ -107,6 +107,7 @@ pub async fn get_protocol_rewards_daily<T: EthSpec>(
         })
         .await;
     let withdrawals = Arc::try_unwrap(withdrawals).unwrap().into_inner();
+    info!("Withdrawals: {}", withdrawals.len());
     let mut result = vec![];
     for id in validators_ids {
         let start_balance = *start_balances.get(id).unwrap_or(&0);
