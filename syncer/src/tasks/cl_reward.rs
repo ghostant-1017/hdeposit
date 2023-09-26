@@ -100,22 +100,21 @@ pub async fn get_protocol_rewards_daily<T: EthSpec>(
                 withdrawals
                     .lock()
                     .await
-                    .entry(withdrawal.index)
+                    .entry(withdrawal.validator_index)
                     .or_default()
                     .add_assign(withdrawal.amount);
             }
         })
         .await;
     let withdrawals = Arc::try_unwrap(withdrawals).unwrap().into_inner();
-    info!("Withdrawals: {}", withdrawals.len());
     let mut result = vec![];
     for id in validators_ids {
         let start_balance = *start_balances.get(id).unwrap_or(&0);
         let closing_balance = *end_balances.get(id).unwrap_or(&0);
         let withdrawal_amount = *withdrawals.get(id).unwrap_or(&0);
         let reward_amount: i64;
-        // TODO: Is this possible?
         if start_balance == 0 && closing_balance == 0 {
+            info!("Skip extract protocol reward validator: {}", id);
             continue;
         }
         if start_balance == 0 {
