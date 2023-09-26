@@ -42,6 +42,7 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
         let ts = epoch_to_timestamp(&eth.clock, synced)? as i64;
         let synced = chrono::NaiveDateTime::from_timestamp_opt(ts, 0).ok_or(anyhow!("time err"))?.and_utc();
         info!("Protocol rewards has synced to: {}", synced);
+        return Ok(())
     }
     if current_finalized < start_epoch_of_today {
         info!("Waiting for {start_epoch_of_today} to be finalized");
