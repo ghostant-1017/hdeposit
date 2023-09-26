@@ -40,7 +40,7 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     // And we only sync protocol rewards before yesterday
     if synced + 225 == start_epoch_of_today.as_u64() {
         let ts = epoch_to_timestamp(&eth.clock, synced)? as i64;
-        let synced = chrono::NaiveDateTime::from_timestamp_opt(ts, 0).ok_or(anyhow!("time err"))?;
+        let synced = chrono::NaiveDateTime::from_timestamp_opt(ts, 0).ok_or(anyhow!("time err"))?.and_utc();
         info!("Protocol rewards has synced to: {}", synced);
     }
     if current_finalized < start_epoch_of_today {
