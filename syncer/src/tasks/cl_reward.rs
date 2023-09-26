@@ -23,23 +23,24 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     eth: EthComponent,
 ) -> anyhow::Result<()> {
     let mut conn = pool.get().await?;
-    let synced = select_sync_state(&conn, &SyncState::DailyRewardsEpoch)
+    let synced_from = select_sync_state(&conn, &SyncState::DailyRewardsEpoch)
         .await?
         .unwrap_or_default();
+    let synced_to = synced_from + 225;
     let current = eth.clock.now().unwrap().epoch(T::slots_per_epoch());
     let start_epoch_of_today = current / 225 * 225;
     let current_finalized = get_current_finalized_epoch::<T>(&eth.beacon).await?;
     info!("Sync protocol rewards, 
-    synced epoch: {synced}, 
+    synced epoch: {synced_to},
+    start epoch of today: {start_epoch_of_today}
     finalized_epoch: {current_finalized},
-    current epoch: {current}, 
-    start epoch of today: {start_epoch_of_today}");
+    current epoch: {current}");
 
     // Only sync the finalized epoch
     // We already have protocol rewards data in range: [synced, synced + 225)
     // And we only sync protocol rewards before yesterday
-    if synced + 225 == start_epoch_of_today.as_u64() {
-        let ts = epoch_to_timestamp(&eth.clock, synced + 225)? as i64;
+    if synced_from + 225 == start_epoch_of_today.as_u64() {
+        let ts = epoch_to_timestamp(&eth.clock, synced_to)? as i64;
         let synced = chrono::NaiveDateTime::from_timestamp_opt(ts, 0).ok_or(anyhow!("time err"))?.and_utc();
         info!("Protocol rewards has synced to: {}", synced);
         return Ok(())
@@ -53,7 +54,7 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
 
     let beacon = eth.beacon.clone();
     let rewards = tokio::spawn(async move {
-        get_protocol_rewards_daily::<T>(&beacon, synced + 225, &validator_ids).await
+        get_protocol_rewards_daily::<T>(&beacon, synced_to, &validator_ids).await
     })
     .await
     .context("join get protocol rewards daily")?
@@ -63,7 +64,7 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     upsert_sync_state(
         tx.client(),
         &SyncState::DailyRewardsEpoch,
-        &(synced as i64 + 225),
+        &(synced_to as i64),
     )
     .await?;
     insert_protocol_rewards(tx.client(), &rewards).await?;
