@@ -49,9 +49,9 @@ pub async fn get_daily_rewards_7days(
     .collect();
 
     let sql = "select epoch, 
-    sum(reward_amount) as reward,
-    sum(withdrawal_amount) as withdrawal,
-    sum(closing_balance) as closing_balance
+    sum(reward_amount)::bigint as reward,
+    sum(withdrawal_amount)::bigint as withdrawal,
+    sum(closing_balance)::bigint as closing_balance
         from protocol_reward
     where validator_index = any($1)
     and 
@@ -66,8 +66,8 @@ pub async fn get_daily_rewards_7days(
     let total_items = rows.len() as i64;
     for row in rows { 
         let epoch: i64 = row.get("epoch");
-        let protocol_reward: i64 = row.get("reward");
-        let withdrawal: i64 = row.get("withdrawal");
+        let protocol_reward: i32 = row.get("reward");
+        let withdrawal: i32 = row.get("withdrawal");
         let closing_balance: i64 = row.get("closing_balance");
         cumulative_protocol_reward += protocol_reward;
         data.push(WalletDailyReward {
