@@ -6,7 +6,7 @@ use bb8_postgres::tokio_postgres::Client;
 use eth2::types::{Hash256, ValidatorData, ValidatorStatus};
 use ethers::types::H256;
 use storage::models::{
-    select_validators_by_credentials, select_withdrawals_by_validator_index, HellmanValidator, select_validator_cumulative_cl_reward, select_validator_cl_apr_7d,
+    select_validators_by_credentials, HellmanValidator, select_validator_cumulative_cl_reward, select_validator_cl_apr_7d,
 };
 
 // 365 * 24 * 3600 / 12 / 32

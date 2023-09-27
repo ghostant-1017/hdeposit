@@ -1,5 +1,8 @@
 use anyhow::Result;
 use bb8_postgres::tokio_postgres::Client;
+use ethers::types::H256;
+
+use super::select_wc_validator_indexes;
 #[derive(Debug)]
 pub struct ProtocolReward {
     pub epoch: u64,
@@ -41,15 +44,8 @@ pub async fn select_validator_cumulative_cl_reward(client: &Client, validator_in
 }
 
 pub async fn select_validator_cl_apr_7d(client: &Client, validator_index: u64) -> Result<f64> {
-    let sql = "select max(epoch)::Bigint as max_epoch from protocol_reward;";
-    let row = client.query_one(sql, &[]).await?;
-    let max_epoch: Option<i64> = row.get("max_epoch");
-    if max_epoch.is_none() {
-        return Ok(Default::default())
-    }
-    let max_epoch = max_epoch.unwrap();
-    let start_epoch = max_epoch - 6 * 225;
-
+    let max_epoch = select_max_epoch(client).await?;
+    let start_epoch = (max_epoch - 6 * 225) as i64;
     let sql = "select (sum(reward_amount) / 32000000000 / 7 * 365 * 100)::DOUBLE PRECISION as apr_7d
     from 
         protocol_reward 
@@ -61,4 +57,38 @@ pub async fn select_validator_cl_apr_7d(client: &Client, validator_index: u64) -
     let row = client.query_one(sql, &[&(validator_index as i64), &start_epoch]).await?;
     let apr: Option<f64> = row.get("apr_7d");
     Ok(apr.unwrap_or_default())
+}
+
+pub async fn select_wc_cl_apr_7d(client: &Client, wc: H256) -> Result<f64> {
+    let indexes: Vec<i64> = select_wc_validator_indexes(client, wc).await?
+    .into_iter()
+    .map(|i| i as i64)
+    .collect();
+    let start_epoch = select_max_epoch(client).await? - 6 * 225;
+    let sql = "
+    select sum(reward_amount)::bigint as reward_7d,
+    count(DISTINCT validator_index)::bigint as validator_count
+    from 
+        protocol_reward 
+    where 
+        epoch >= $2
+    and 
+        validator_index = any($1)";
+    let row = client.query_one(sql, &[&indexes, &(start_epoch as i64)]).await?;
+    let reward_7d: Option<i64> = row.get("reward_7d");
+    let validator_count: i64 = row.get("validator_count");
+    if reward_7d.is_none() {
+        return Ok(0.0)
+    }
+    let reward_7d = reward_7d.unwrap() as f64;
+    let validator_count = validator_count as f64;
+    Ok(reward_7d / validator_count)
+} 
+
+pub async fn select_max_epoch(client: &Client) -> Result<u64> {
+    let sql = "select max(epoch)::Bigint as max_epoch from protocol_reward;";
+    let row = client.query_one(sql, &[]).await?;
+    let max_epoch: Option<i64> = row.get("max_epoch");
+
+    Ok(max_epoch.map(|n| n as u64).unwrap_or_default())
 }

@@ -5,7 +5,7 @@ use eth2::types::Hash256;
 use ethers::types::Address;
 use storage::models::{
     query_el_fee_address_by_wc, select_validators_by_credentials,
-    select_withdrawals_by_validator_index,
+    select_validator_cumulative_cl_reward,
 };
 
 #[derive(Debug, Deserialize)]
@@ -48,12 +48,7 @@ pub async fn get_balance(
             pending_protocol_balance +=
                 data.balance as i64 - (data.validator.effective_balance as i64);
             effective_balance += data.validator.effective_balance as i64;
-            let protocol_reward = select_withdrawals_by_validator_index(&conn, data.index)
-                .await?
-                .into_iter()
-                .map(|w| w.withdrawal.amount as i64)
-                .filter(|amount| *amount < DEPOSIT_AMOUNT as i64)
-                .sum::<i64>();
+            let protocol_reward = select_validator_cumulative_cl_reward(&conn, data.index).await? as i64;
             accumulative_protocol_reward += protocol_reward;
             let arp = caculate_arp(
                 &server.clock,
