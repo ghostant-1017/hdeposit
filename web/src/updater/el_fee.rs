@@ -110,7 +110,7 @@ impl<T: EthSpec> Updater<T> {
             fee_recipient,
             amount,
         };
-        insert_el_fee(db, el_fee).await?;
+        insert_el_fee(db, &vec![el_fee]).await?;
         Ok(())
     }
 }
