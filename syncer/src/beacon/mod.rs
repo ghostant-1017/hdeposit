@@ -1,30 +1,19 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::anyhow;
-use eth2::types::{BlockId, EthSpec, SignedBeaconBlock, StateId, ValidatorId, Epoch};
+use eth2::types::{BlockId, Epoch, EthSpec, SignedBeaconBlock, StateId, ValidatorId};
 use eth2::BeaconNodeHttpClient;
 
 pub type BeaconClient = BeaconNodeHttpClient;
 
-pub async fn get_current_finalized_block<T: EthSpec>(
-    beacon: &BeaconClient
-) -> anyhow::Result<SignedBeaconBlock<T>> {
-    let response = beacon
-    .get_beacon_blocks::<T>(BlockId::Finalized)
-    .await
-    .map_err(|err| anyhow!("{err}"))?
-    .ok_or(anyhow!("block number not found"))?;
-    Ok(response.data)
-}
-
-pub async fn get_current_finalized_epoch<T: EthSpec> (
+pub async fn get_current_finalized_epoch<T: EthSpec>(
     beacon: &BeaconClient,
- ) -> anyhow::Result<Epoch> {
-    let block = get_current_finality_block::<T>(beacon).await?;
+) -> anyhow::Result<Epoch> {
+    let block = get_current_finalized_block::<T>(beacon).await?;
     Ok(block.slot().epoch(T::slots_per_epoch()))
 }
 
-pub async fn get_current_finality_block<T: EthSpec>(
+pub async fn get_current_finalized_block<T: EthSpec>(
     beacon: &BeaconClient,
 ) -> anyhow::Result<SignedBeaconBlock<T>> {
     let response = beacon
@@ -39,7 +28,7 @@ pub async fn get_current_finality_block<T: EthSpec>(
 pub async fn get_current_finality_block_number<T: EthSpec>(
     beacon: &BeaconNodeHttpClient,
 ) -> anyhow::Result<u64> {
-    let block = get_current_finality_block::<T>(beacon).await?;
+    let block = get_current_finalized_block::<T>(beacon).await?;
     let payload = block
         .message()
         .execution_payload()

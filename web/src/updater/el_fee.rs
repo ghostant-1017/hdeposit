@@ -7,8 +7,8 @@ use eth2::types::{BlockId, SignedBeaconBlock};
 use ethers::{providers::Middleware, types::TransactionReceipt};
 use futures::StreamExt;
 use storage::models::{
-    insert_el_fee, select_all_validator_indexes, select_sync_state, upsert_sync_state, ELFee,
-    SyncState,
+    insert_el_fee, select_all_validator_indexes, select_sync_state, upsert_sync_state,
+    ExecutionReward, SyncState,
 };
 use tokio::sync::Mutex;
 use tracing::info;
@@ -18,7 +18,7 @@ impl<T: EthSpec> Updater<T> {
         let mut conn = self.pool.get().await?;
         // 1.Select last synced slot, let from = synced + 1;
         let tx = conn.transaction().await?;
-        let synced = select_sync_state(tx.client(), &SyncState::ELFeeLastSlot)
+        let synced = select_sync_state(tx.client(), &SyncState::ELRewardLastSlot)
             .await?
             .unwrap_or(self.start);
         let from = synced + 1;
@@ -62,7 +62,7 @@ impl<T: EthSpec> Updater<T> {
                 }
             })
             .await;
-        upsert_sync_state(tx.client(), &SyncState::ELFeeLastSlot, &(to as i64)).await?;
+        upsert_sync_state(tx.client(), &SyncState::ELRewardLastSlot, &(to as i64)).await?;
         tx.commit().await?;
         Ok(())
     }
@@ -102,7 +102,7 @@ impl<T: EthSpec> Updater<T> {
         info!(
             "Found 32stake propose a slot, index: {proposer_index}, fee_recipient: {fee_recipient}"
         );
-        let el_fee = ELFee {
+        let el_fee = ExecutionReward {
             slot,
             block_number,
             block_hash,

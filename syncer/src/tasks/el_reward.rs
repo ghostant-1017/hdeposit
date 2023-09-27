@@ -1,99 +1,134 @@
-use std::collections::HashMap;
 use std::collections::HashSet;
 
-use std::ops::AddAssign;
 use std::sync::Arc;
 
-use crate::beacon::BeaconClient;
+use crate::beacon::get_beacon_block_by_slot;
+use crate::beacon::get_current_finalized_block;
+
+use crate::component::EthComponent;
 use crate::geth::get_block_receipts_by_hash;
 use crate::geth::Eth1Client;
+use anyhow::Context;
 use anyhow::anyhow;
-use eth2::types::Epoch;
+use anyhow::ensure;
+use backoff::future::retry;
+use backoff::ExponentialBackoff;
+
+use eth2::types::EthSpec;
+use eth2::types::SignedBeaconBlock;
 use eth2::types::Slot;
-use eth2::types::{BeaconBlock, EthSpec};
 use ethers::types::TransactionReceipt;
-use storage::models::ELFee;
+use futures::StreamExt;
+use storage::db::PgPool;
+use storage::models::insert_el_fee;
+use storage::models::select_all_validator_indexes;
+use storage::models::select_sync_state;
+use storage::models::upsert_sync_state;
+use storage::models::ExecutionReward;
+use storage::models::SyncState;
+use tokio::sync::Mutex;
+use tracing::info;
 
-pub async fn extract_rewards(
-    beacon: Arc<BeaconClient>,
-    from: Slot,
-    to: Slot,
-    validators: &HashSet<u64>,
+pub async fn sync_execution_rewards<T: EthSpec>(
+    pool: PgPool,
+    eth: EthComponent,
 ) -> anyhow::Result<()> {
-    let block_rewards = beacon
-        .get_lighthouse_analysis_block_rewards(from, to)
-        .await
-        .map_err(|err| anyhow!("get block_rewards: {err}"))?;
-
-    let mut epoch_rewards = HashMap::<Epoch, HashMap<u64, i64>>::new();
-    for block_reward in block_rewards {
-        let epoch = block_reward.meta.slot.epoch(32);
-        let proposer_index = block_reward.meta.proposer_index;
-        let sync_committee_rewards = block_reward.sync_committee_rewards;
-        let attestation_rewards = block_reward.attestation_rewards;
-        println!(
-            "slot:{}, total:{}",
-            block_reward.meta.slot, block_reward.total
-        );
-        if validators.contains(&proposer_index) {
-            epoch_rewards
-                .entry(epoch)
-                .or_default()
-                .entry(proposer_index)
-                .or_default()
-                .add_assign(sync_committee_rewards as i64);
-        }
-        for attestation_reward in attestation_rewards.per_attestation_rewards {
-            for validator in validators {
-                if attestation_reward.contains_key(validator) {
-                    let amount = *attestation_reward.get(validator).unwrap();
-                    println!("found amount: {}", amount);
-                    epoch_rewards
-                        .entry(epoch)
-                        .or_default()
-                        .entry(*validator)
-                        .or_default()
-                        .add_assign(amount as i64)
-                }
-            }
-        }
+    // Check if we have synced to the latest finalized state
+    let mut db = pool.get().await?;
+    let synced = Slot::new(
+        select_sync_state(&db, &SyncState::ELRewardLastSlot)
+            .await?
+            .unwrap(),
+    );
+    let finalized = get_current_finalized_block::<T>(&eth.beacon).await?.slot();
+    ensure!(
+        synced <= finalized,
+        "Critical error, synced must less than finalized slot"
+    );
+    if finalized == synced {
+        return Ok(());
     }
-    println!("{:?}", epoch_rewards);
+
+    // Now we have new slots to sync with, range: [synced + 1, finalized_slot]
+    info!(
+        "Syncing execution rewards from: {} to: {}",
+        synced + 1,
+        finalized
+    );
+    let validator_ids = select_all_validator_indexes(&db).await?;
+    let rewards = tokio::spawn(async move {
+        get_execution_rewards::<T>(&eth, &validator_ids, synced + 1, finalized).await
+    }).await
+    .context("join get execution rewards")?
+    .context("get execution rewards")?;
+    
+    // Insert batch in transacitons and update SyncState
+    let tx = db.transaction().await?;
+    insert_el_fee(tx.client(), &rewards).await?;
+    upsert_sync_state(
+        tx.client(),
+        &SyncState::ELRewardLastSlot,
+        &(finalized.as_u64() as i64),
+    )
+    .await?;
+    tx.commit().await?;
+
+    info!(
+        "Successfully synced execution rewards nums: {}",
+        rewards.len()
+    );
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use std::time::Duration;
-
-    use eth2::{BeaconNodeHttpClient, SensitiveUrl, Timeouts};
-
-    use super::*;
-    #[tokio::test]
-    async fn test_epoch_rewards() {
-        let eth2_endpoint = "http://localhost:5052/";
-        let url = SensitiveUrl::parse(eth2_endpoint).unwrap();
-        let beacon = BeaconNodeHttpClient::new(url, Timeouts::set_all(Duration::from_secs(5)));
-        let mut validators = HashSet::new();
-        validators.insert(119812_u64);
-        extract_rewards(
-            Arc::new(beacon),
-            Slot::new(6571904),
-            Slot::new(6571935),
-            &validators,
-        )
-        .await
-        .unwrap();
-    }
+pub async fn get_execution_rewards<T: EthSpec>(
+    eth: &EthComponent,
+    validator_ids: &HashSet<u64>,
+    from: Slot,
+    to: Slot,
+) -> anyhow::Result<Vec<ExecutionReward>> {
+    let from = from.as_u64();
+    let to = to.as_u64();
+    let rewards = Arc::new(Mutex::new(vec![]));
+    futures::stream::iter(from..=to)
+        .map(|slot| async move {
+            retry(ExponentialBackoff::default(), || async {
+                Ok(get_beacon_block_by_slot::<T>(&eth.beacon, slot).await?)
+            })
+            .await
+            .unwrap()
+        })
+        .buffered(128)
+        .for_each(|block| async {
+            let block = match block {
+                Some(block) => block,
+                None => return,
+            };
+            // If the proposer is not our validators, just skip
+            let proposer_index = block.message_capella().unwrap().proposer_index;
+            if !validator_ids.contains(&proposer_index) {
+                return;
+            }
+            // Extract execution reward inforamtion from beacon block
+            let reward = retry(ExponentialBackoff::default(), || async {
+                Ok(extract_el_rewards_capella::<T>(&block, &eth.eth1).await?)
+            })
+            .await
+            .unwrap();
+            rewards.lock().await.push(reward);
+        })
+        .await;
+    let rewards = Arc::try_unwrap(rewards).unwrap().into_inner();
+    Ok(rewards)
 }
 
 pub async fn extract_el_rewards_capella<T: EthSpec>(
-    block: BeaconBlock<T>,
+    block: &SignedBeaconBlock<T>,
     eth1: &Eth1Client,
-) -> anyhow::Result<ELFee> {
-    let block = block
+) -> anyhow::Result<ExecutionReward> {
+    let block = &block
         .as_capella()
-        .map_err(|_| anyhow!("not capella block"))?;
+        .map_err(|_| anyhow!("not capella block"))?
+        .message;
     let slot = block.slot.as_u64();
     let validator_index = block.proposer_index;
 
@@ -103,7 +138,7 @@ pub async fn extract_el_rewards_capella<T: EthSpec>(
     // 3. query block_hash from eth1
     let receipts = get_block_receipts_by_hash(eth1, block_number).await?;
     let amount = caculate_block_fee(receipts)?;
-    Ok(ELFee {
+    Ok(ExecutionReward {
         slot,
         block_number,
         block_hash: block_hash.into_root(),

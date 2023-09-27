@@ -2,7 +2,8 @@ use anyhow::Result;
 use bb8_postgres::tokio_postgres::Client;
 use ethers::types::{H160, H256};
 
-pub struct ELFee {
+#[derive(Debug)]
+pub struct ExecutionReward {
     pub slot: u64,
     pub block_number: u64,
     pub block_hash: H256,
@@ -11,11 +12,12 @@ pub struct ELFee {
     pub amount: u64,
 }
 
-pub async fn insert_el_fee(client: &Client, el_fee: ELFee) -> Result<()> {
+pub async fn insert_el_fee(client: &Client, batch: &Vec<ExecutionReward>) -> Result<()> {
     let sql =
         "insert into el_fee(slot,block_number,block_hash,validator_index,fee_recipient,amount)
     values($1,$2,$3,$4,$5,$6);";
-    client
+    for el_fee in batch {
+        client
         .execute(
             sql,
             &[
@@ -28,5 +30,6 @@ pub async fn insert_el_fee(client: &Client, el_fee: ELFee) -> Result<()> {
             ],
         )
         .await?;
+    }    
     Ok(())
 }

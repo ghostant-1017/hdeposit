@@ -1,10 +1,13 @@
 use super::*;
-use crate::beacon::{get_beacon_block_by_slot, get_validator_balances_by_slot, BeaconClient, get_current_finalized_epoch};
-use anyhow::{Context, anyhow};
+use crate::beacon::{
+    get_beacon_block_by_slot, get_current_finalized_epoch, get_validator_balances_by_slot,
+    BeaconClient,
+};
+use anyhow::{anyhow, Context};
 use backoff::{future::retry, ExponentialBackoff};
 use eth2::types::EthSpec;
 use futures::StreamExt;
-use slot_clock::{SlotClock, SystemTimeSlotClock, Slot};
+use slot_clock::{Slot, SlotClock, SystemTimeSlotClock};
 use std::{
     collections::{HashMap, HashSet},
     ops::AddAssign,
@@ -31,24 +34,28 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     let current = eth.clock.now().unwrap().epoch(T::slots_per_epoch());
     let start_epoch_of_today = current / 225 * 225;
     let current_finalized = get_current_finalized_epoch::<T>(&eth.beacon).await?;
-    info!("Sync protocol rewards, 
+    info!(
+        "Sync protocol rewards, 
     synced epoch: {synced_to},
     start epoch of today: {start_epoch_of_today}
     finalized_epoch: {current_finalized},
-    current epoch: {current}");
+    current epoch: {current}"
+    );
 
     // Only sync the finalized epoch
     // We already have protocol rewards data in range: [synced, synced + 225)
     // And we only sync protocol rewards before yesterday
     if synced_from + 225 == start_epoch_of_today.as_u64() {
         let ts = epoch_to_timestamp(&eth.clock, synced_to)? as i64;
-        let synced = chrono::NaiveDateTime::from_timestamp_opt(ts, 0).ok_or(anyhow!("time err"))?.and_utc();
+        let synced = chrono::NaiveDateTime::from_timestamp_opt(ts, 0)
+            .ok_or(anyhow!("time err"))?
+            .and_utc();
         info!("Protocol rewards has synced to: {}", synced);
-        return Ok(())
+        return Ok(());
     }
     if current_finalized < start_epoch_of_today {
         info!("Waiting for {start_epoch_of_today} to be finalized");
-        return Ok(())
+        return Ok(());
     }
 
     let validator_ids = select_all_validator_indexes(&conn).await?;
@@ -70,7 +77,10 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     .await?;
     insert_protocol_rewards(tx.client(), &rewards).await?;
     tx.commit().await?;
-    info!("Successfully insert protocol reward nums: {}", rewards.len());
+    info!(
+        "Successfully insert protocol reward nums: {}",
+        rewards.len()
+    );
     Ok(())
 }
 
@@ -137,7 +147,7 @@ pub async fn get_protocol_rewards_daily<T: EthSpec>(
         let closing_balance = *end_balances.get(id).unwrap_or(&0);
         let withdrawal_amount = *withdrawals.get(id).unwrap_or(&0);
         let reward_amount: i64;
-        
+
         // This validator is not active, so we skip it.
         if start_balance == 0 && closing_balance == 0 {
             continue;

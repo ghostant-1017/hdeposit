@@ -5,7 +5,7 @@ use bb8_postgres::tokio_postgres::Client;
 use eth2::types::Hash256;
 
 use slot_clock::Slot;
-use storage::models::{select_wc_validator_indexes, select_sync_state, SyncState};
+use storage::models::{select_sync_state, select_wc_validator_indexes, SyncState};
 
 const SLOTS_PER_DAY: u64 = 7200;
 
@@ -42,12 +42,18 @@ pub async fn get_daily_rewards_7days(
     Ok(Json(Response { total_items, data }))
 }
 
-async fn get_recent_n_days_rewards(db: &Client, clock: &SystemTimeSlotClock, n: u64, wc: Hash256) -> anyhow::Result<Vec<WalletDailyReward>> {
-    let end_epoch = select_sync_state(&db, &SyncState::DailyRewardsEpoch)
-    .await?
-    .ok_or(anyhow!("missing protocol rewards"))? + 225;
+async fn get_recent_n_days_rewards(
+    db: &Client,
+    clock: &SystemTimeSlotClock,
+    n: u64,
+    wc: Hash256,
+) -> anyhow::Result<Vec<WalletDailyReward>> {
+    let end_epoch = select_sync_state(db, &SyncState::DailyRewardsEpoch)
+        .await?
+        .ok_or(anyhow!("missing protocol rewards"))?
+        + 225;
     let start_epoch = end_epoch - 225 * n;
-    let validator_ids: Vec<i64> = select_wc_validator_indexes(&db, wc)
+    let validator_ids: Vec<i64> = select_wc_validator_indexes(db, wc)
         .await?
         .into_iter()
         .map(|id| id as i64)
@@ -88,7 +94,7 @@ async fn get_recent_n_days_rewards(db: &Client, clock: &SystemTimeSlotClock, n: 
         let closing_balance: i64 = row.get("closing_balance");
         cumulative_protocol_reward += protocol_reward;
         data.push(WalletDailyReward {
-            unix: epoch_to_timestamp(&clock, epoch as u64)?,
+            unix: epoch_to_timestamp(clock, epoch as u64)?,
             epoch,
             protocol_reward,
             withdrawal,
