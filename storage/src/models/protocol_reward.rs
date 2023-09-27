@@ -66,23 +66,23 @@ pub async fn select_wc_cl_apr_7d(client: &Client, wc: H256) -> Result<f64> {
     .collect();
     let start_epoch = select_max_epoch(client).await? - 6 * 225;
     let sql = "
-    select sum(reward_amount)::bigint as reward_7d,
-    count(DISTINCT validator_index)::bigint as validator_count
-    from 
-        protocol_reward 
-    where 
-        epoch >= $2
-    and 
-        validator_index = any($1)";
+select avg(t1.apr_7d)::DOUBLE PRECISION from
+    (
+        select validator_index, (sum(reward_amount) / 32000000000 / 7 * 365 * 100)::DOUBLE PRECISION as apr_7d, count(epoch)
+        from 
+            protocol_reward 
+        where 
+            validator_index = any($1)
+        and
+            epoch >= $2
+        GROUP BY validator_index
+    ) t1
+where t1.count > 1;
+";
+
     let row = client.query_one(sql, &[&indexes, &(start_epoch as i64)]).await?;
-    let reward_7d: Option<i64> = row.get("reward_7d");
-    let validator_count: i64 = row.get("validator_count");
-    if reward_7d.is_none() {
-        return Ok(0.0)
-    }
-    let reward_7d = reward_7d.unwrap() as f64;
-    let validator_count = validator_count as f64;
-    Ok(reward_7d / validator_count)
+    let apr_7d: Option<f64> = row.get("avg");
+    Ok(apr_7d.unwrap_or_default())
 } 
 
 pub async fn select_max_epoch(client: &Client) -> Result<u64> {
