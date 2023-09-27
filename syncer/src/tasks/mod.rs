@@ -28,6 +28,9 @@ F: Fn() -> Fut + Send,
 Fut: Future<Output = anyhow::Result<()>> + Send
 {
     let mut event_rx = event_tx.subscribe();
+    if let Err(err) = job().await {
+        error!("Do first job error: {err}");
+    };
     loop {
         let event = match event_rx.recv().await {
             Ok(event) => event,
