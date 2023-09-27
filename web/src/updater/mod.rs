@@ -10,9 +10,7 @@ type DepositContract = DepositContractABI<Provider<Http>>;
 
 mod claim_history;
 mod deposit_events;
-mod el_fee;
 mod validators;
-mod withdrawals;
 pub struct Updater<T: EthSpec> {
     beacon: BeaconNodeHttpClient,
     eth1_client: Provider<Http>,
@@ -48,14 +46,8 @@ impl<T: EthSpec> Updater<T> {
             if let Err(err) = self.update_validators().await {
                 error!("Update validators: {}", err);
             }
-            if let Err(err) = self.update_withdrawals().await {
-                error!("Update withdrawls: {}", err);
-            }
             if let Err(err) = self.update_claim_history().await {
                 error!("Update claim history: {}", err);
-            }
-            if let Err(err) = self.update_el_fee().await {
-                error!("Update El fee: {}", err);
             }
             tokio::time::sleep(Duration::from_secs(12)).await
         }
