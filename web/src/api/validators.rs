@@ -6,7 +6,7 @@ use bb8_postgres::tokio_postgres::Client;
 use eth2::types::{Hash256, ValidatorData, ValidatorStatus};
 use ethers::types::H256;
 use storage::models::{
-    select_validators_by_credentials, select_withdrawals_by_validator_index, HellmanValidator,
+    select_validators_by_credentials, select_withdrawals_by_validator_index, HellmanValidator, select_validator_cumulative_cl_reward, select_validator_cl_apr_7d,
 };
 
 // 365 * 24 * 3600 / 12 / 32
@@ -45,19 +45,8 @@ impl ValidatorInfo {
             })
         } else {
             let validator_data = validator.data.unwrap();
-            let accumulative_protocol_reward: u64 =
-                select_withdrawals_by_validator_index(client, validator_data.index)
-                    .await?
-                    .into_iter()
-                    .map(|w| w.withdrawal.amount)
-                    .filter(|amount| *amount < DEPOSIT_AMOUNT)
-                    .sum();
-            let cl_apr = caculate_arp(
-                clock,
-                validator_data.validator.activation_epoch.as_u64(),
-                accumulative_protocol_reward,
-            )
-            .unwrap_or_default();
+            let accumulative_protocol_reward = select_validator_cumulative_cl_reward(client, validator_data.index).await?;
+            let cl_apr = select_validator_cl_apr_7d(client, validator_data.index).await?;
             Ok(Self {
                 index: validator.index,
                 withdrawal_credentials: validator.withdrawal_credentials,
