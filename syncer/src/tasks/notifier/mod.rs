@@ -6,7 +6,7 @@ use eth2::types::{EventTopic, EventKind};
 use futures::StreamExt;
 use tokio::sync::broadcast::channel;
 use tokio::sync::broadcast::{Sender, Receiver};
-use tracing::warn;
+use tracing::{warn, info};
 use super::*;
 
 pub type ChainEventTx<T> = Sender<EventKind<T>>;
@@ -34,6 +34,7 @@ pub fn init<T: EthSpec>(beacon: Arc<BeaconClient>) -> (ChainEventTx<T>, ChainEve
                         break;
                     }
                 };
+                info!("Chain event is coming: {:?}", event);
                 let _ = tx.send(event);
             }
             warn!("Beacon events stream broken")
