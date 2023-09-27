@@ -14,22 +14,6 @@ use eth2::types::{BeaconBlock, EthSpec};
 use ethers::types::TransactionReceipt;
 use storage::models::ELFee;
 
-pub struct AttestationReward {
-    epoch: u64,
-    validator_index: u64,
-    amount: u64,
-}
-
-pub struct SyncCommitteeReward {
-    epoch: u64,
-    validator_index: u64,
-    amount: u64,
-}
-
-pub struct BlockReward {
-    slot: u64,
-}
-
 pub async fn extract_rewards(
     beacon: Arc<BeaconClient>,
     from: Slot,

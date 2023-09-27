@@ -1,5 +1,5 @@
 mod cl_reward;
-mod el_fee;
+mod el_reward;
 use std::time::Duration;
 
 use eth2::types::EthSpec;

@@ -27,6 +27,7 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
         .await?
         .unwrap_or_default();
     let synced_to = synced_from + 225;
+    // Last sync epoch range: [synced_from, synced_to)
     let current = eth.clock.now().unwrap().epoch(T::slots_per_epoch());
     let start_epoch_of_today = current / 225 * 225;
     let current_finalized = get_current_finalized_epoch::<T>(&eth.beacon).await?;
@@ -69,6 +70,7 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     .await?;
     insert_protocol_rewards(tx.client(), &rewards).await?;
     tx.commit().await?;
+    info!("Successfully insert protocol reward nums: {}", rewards.len());
     Ok(())
 }
 
@@ -135,8 +137,9 @@ pub async fn get_protocol_rewards_daily<T: EthSpec>(
         let closing_balance = *end_balances.get(id).unwrap_or(&0);
         let withdrawal_amount = *withdrawals.get(id).unwrap_or(&0);
         let reward_amount: i64;
+        
+        // This validator is not active, so we skip it.
         if start_balance == 0 && closing_balance == 0 {
-            info!("Skip extract protocol reward validator: {}", id);
             continue;
         }
         if start_balance == 0 {
