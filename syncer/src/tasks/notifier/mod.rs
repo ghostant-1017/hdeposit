@@ -29,12 +29,11 @@ pub fn init<T: EthSpec>(beacon: Arc<BeaconClient>) -> (ChainEventTx<T>, ChainEve
             while let Some(event) = stream.next().await {
                 let event = match event {
                     Ok(event) => event,
-                    Err(err) => {
-                        error!("stream events deser error: {err}");
-                        break;
+                    Err(_) => {
+                        continue;
                     }
                 };
-                info!("Chain event is coming: {:?}", event);
+                info!("Chain event coming: {:?}", event);
                 let _ = tx.send(event);
             }
             warn!("Beacon events stream broken")
