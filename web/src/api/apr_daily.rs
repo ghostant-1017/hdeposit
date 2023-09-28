@@ -44,8 +44,8 @@ pub async fn get_apr_daily(
     for (epoch, count) in counts {
         let cl_reward = *cl_rewards.get(&epoch).unwrap_or(&0) as f64;
         let el_reward = *el_rewards.get(&epoch).unwrap_or(&0) as f64;
-        let cl_apr = cl_reward / (count * 32_000_000_000) as f64;
-        let el_apr = el_reward / (count * 32_000_000_000) as f64;
+        let cl_apr = cl_reward / (count * 32_000_000_000) as f64 * 365.0 * 100.0 ;
+        let el_apr = el_reward / (count * 32_000_000_000) as f64 * 365.0 * 100.0 ;
         let total_apr = cl_apr + el_apr;
         data.push(APRDaily {
             unix: epoch_to_timestamp(&clock, epoch.as_u64())?,
