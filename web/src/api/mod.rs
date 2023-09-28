@@ -13,6 +13,9 @@ mod err;
 mod estimate_rewards;
 mod exit;
 mod validators;
+mod apr_daily;
+mod utils;
+use crate::api::apr_daily::get_apr_daily;
 use crate::api::balance::get_balance;
 use crate::api::claim_history::get_claim_history;
 use crate::api::daily_rewards::get_daily_rewards_7days;
@@ -66,6 +69,7 @@ impl Server {
                 "/api/v1/staking/estimate_rewards",
                 get(get_estimate_rewards),
             )
+            .route("/api/v1/staking/apr_daily", get(get_apr_daily))
             .with_state(self);
         info!("Server start at: {}", addr);
         axum::Server::bind(&addr)

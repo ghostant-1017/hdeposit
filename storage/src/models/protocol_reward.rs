@@ -1,6 +1,9 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use bb8_postgres::tokio_postgres::Client;
 use ethers::types::H256;
+use lighthouse_types::Epoch;
 
 use super::select_wc_validator_indexes;
 #[derive(Debug)]
@@ -91,4 +94,62 @@ pub async fn select_max_epoch(client: &Client) -> Result<u64> {
     let max_epoch: Option<i64> = row.get("max_epoch");
 
     Ok(max_epoch.map(|n| n as u64).unwrap_or_default())
+}
+
+pub async fn select_range_validators_count(client: &Client, from: i64, to: i64) -> Result<Vec<(Epoch, u64)>> {
+    let sql = "select epoch, count(validator_index)::BIGINT from protocol_reward WHERE 
+        epoch >= $1 
+    and 
+        epoch <= $2
+    and 
+        reward_amount != 0 
+    GROUP BY epoch
+    ORDER BY epoch;";
+    let rows = client.query(sql, &[&from, &to]).await?;
+    let mut result = vec![];
+    for row in rows {
+        let epoch: i64 = row.get("epoch");
+        let count: i64 = row.get("count");
+        result.push((Epoch::new(epoch as u64), count as u64))
+    }
+    return Ok(result)
+}
+
+pub async fn select_range_cl_rewards(client: &Client, from: i64, to: i64) -> Result<Vec<(Epoch, u64)>> {
+    let sql = "select epoch, sum(reward_amount)::BIGINT as cl_reward 
+    from 
+        protocol_reward 
+    where 
+        epoch >= $1
+    and 
+        epoch <= $2
+    GROUP BY epoch 
+    ORDER BY epoch ASC;";
+    let rows = client.query(sql, &[&from, &to]).await?;
+    let mut result = vec![];
+    for row in rows {
+        let epoch: i64 = row.get("epoch");
+        let cl_reward: i64 = row.get("cl_reward");
+        result.push((Epoch::new(epoch as u64), cl_reward as u64))
+    }
+    Ok(result)
+}
+
+pub async fn select_range_el_rewards(client: &Client, from: i64, to: i64) -> Result<Vec<(Epoch, u64)>> {
+    let sql = "
+    select (slot / 32)::Bigint as epoch, sum(amount)::BIGINT as el_reward 
+    from execution_reward 
+    where 
+        (slot / 32) >= $1
+    and 
+        (slot / 32) <= $2
+    GROUP BY (slot / 32);";
+    let rows = client.query(sql, &[&from, &to]).await?;
+    let mut result = vec![];
+    for row in rows {
+        let epoch: i64 = row.get("epoch");
+        let el_reward: i64 = row.get("el_reward");
+        result.push((Epoch::new(epoch as u64), el_reward as u64))
+    }
+    Ok(result)
 }
