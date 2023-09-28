@@ -21,8 +21,9 @@ pub struct Response {
 
     pub accumulative_protocol_reward: i64,
     pub accumulative_fee_reward: i64,
-
+    pub total_apr: f64,
     pub cl_apr: f64,
+    pub el_apr: f64,
     pub el_fee_address: Option<Address>,
 }
 
@@ -38,6 +39,8 @@ pub async fn get_balance(
     let mut effective_balance = 0;
     let mut pending_protocol_balance = 0;
     let mut accumulative_protocol_reward = 0;
+    let el_apr = 0.0;
+
     let accumulative_fee_reward = 0;
     for validator in validators {
         total_balance += validator.amount as i64;
@@ -53,13 +56,16 @@ pub async fn get_balance(
         }
     }
     let cl_apr = select_wc_cl_apr_7d(&conn, params.wc).await?;
+    let total_apr = cl_apr + el_apr;
     Ok(Json(Response {
         total_balance,
         effective_balance,
         pending_protocol_balance,
         accumulative_protocol_reward,
         accumulative_fee_reward,
+        total_apr,
         cl_apr,
+        el_apr,
         el_fee_address,
     }))
 }
