@@ -18,7 +18,7 @@ pub struct Response {
     pub total_balance: i64,
     pub effective_balance: i64,
     pub pending_protocol_balance: i64,
-
+    pub total_rewards: i64,
     pub accumulative_protocol_reward: i64,
     pub accumulative_fee_reward: i64,
     pub total_apr: f64,
@@ -57,10 +57,12 @@ pub async fn get_balance(
     }
     let cl_apr = select_wc_cl_apr_7d(&conn, params.wc).await?;
     let total_apr = cl_apr + el_apr;
+    let total_rewards = accumulative_fee_reward + accumulative_protocol_reward;
     Ok(Json(Response {
         total_balance,
         effective_balance,
         pending_protocol_balance,
+        total_rewards,
         accumulative_protocol_reward,
         accumulative_fee_reward,
         total_apr,
