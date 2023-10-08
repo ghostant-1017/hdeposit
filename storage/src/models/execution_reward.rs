@@ -12,9 +12,9 @@ pub struct ExecutionReward {
     pub amount: u64,
 }
 
-pub async fn insert_el_fee(client: &Client, batch: &Vec<ExecutionReward>) -> Result<()> {
+pub async fn insert_execution_reward(client: &Client, batch: &Vec<ExecutionReward>) -> Result<()> {
     let sql =
-        "insert into el_fee(slot,block_number,block_hash,validator_index,fee_recipient,amount)
+        "insert into execution_reward(slot,block_number,block_hash,validator_index,fee_recipient,amount)
     values($1,$2,$3,$4,$5,$6);";
     for el_fee in batch {
         client

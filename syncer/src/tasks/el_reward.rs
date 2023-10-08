@@ -20,7 +20,7 @@ use eth2::types::Slot;
 use ethers::types::TransactionReceipt;
 use futures::StreamExt;
 use storage::db::PgPool;
-use storage::models::insert_el_fee;
+use storage::models::insert_execution_reward;
 use storage::models::select_all_validator_indexes;
 use storage::models::select_sync_state;
 use storage::models::upsert_sync_state;
@@ -64,7 +64,7 @@ pub async fn sync_execution_rewards<T: EthSpec>(
     
     // Insert batch in transacitons and update SyncState
     let tx = db.transaction().await?;
-    insert_el_fee(tx.client(), &rewards).await?;
+    insert_execution_reward(tx.client(), &rewards).await?;
     upsert_sync_state(
         tx.client(),
         &SyncState::ELRewardLastSlot,
