@@ -71,6 +71,6 @@ pub async fn select_range_el_fee_by_indexes(client: &Client, from: i64, to: i64,
         and 
     slot / 32 <= $3;";
     let row = client.query_one(sql, &[&indexes, &from, &to]).await?;
-    let reward: i64= row.get(0);
-    Ok(reward)
+    let reward: Option<i64>= row.get(0);
+    Ok(reward.unwrap_or_default())
 }
