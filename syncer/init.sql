@@ -14,6 +14,7 @@ CREATE TABLE execution_reward(
     id BIGSERIAL PRIMARY KEY,
     slot BIGINT NOT NULL,
     block_number BIGINT NOT NULL,
+    block_hash VARCHAR NOT NULL,
     validator_index BIGINT NOT NULL,
     fee_recipient VARCHAR NOT NULL,
     amount BIGINT NOT NULL
