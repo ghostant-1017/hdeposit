@@ -138,7 +138,7 @@ pub async fn select_range_cl_rewards(client: &Client, from: i64, to: i64) -> Res
 // Epoch range
 pub async fn select_range_el_rewards(client: &Client, from: i64, to: i64) -> Result<Vec<(Epoch, u64)>> {
     let sql = "
-    select (slot / 32 / 225 * 225)::Bigint as epoch, sum(amount)::BIGINT as el_reward 
+    select (slot / 32 / 225 * 225)::Bigint as epoch, (sum(amount) / 1000000000)::BIGINT as el_reward 
     from execution_reward 
     where 
         (slot / 32) >= $1
