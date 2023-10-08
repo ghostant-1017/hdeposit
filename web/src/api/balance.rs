@@ -5,7 +5,7 @@ use eth2::types::Hash256;
 use ethers::types::Address;
 use storage::models::{
     query_el_fee_address_by_wc, select_validators_by_credentials,
-    select_validator_cumulative_cl_reward, select_wc_cl_apr_7d,
+    select_validator_cumulative_cl_reward, select_wc_cl_apr_7d, select_wc_el_apr_7d,
 };
 
 #[derive(Debug, Deserialize)]
@@ -39,7 +39,6 @@ pub async fn get_balance(
     let mut effective_balance = 0;
     let mut pending_protocol_balance = 0;
     let mut accumulative_protocol_reward = 0;
-    let el_apr = 0.0;
 
     let accumulative_fee_reward = 0;
     for validator in validators {
@@ -56,6 +55,7 @@ pub async fn get_balance(
         }
     }
     let cl_apr = select_wc_cl_apr_7d(&conn, params.wc).await?;
+    let el_apr = select_wc_el_apr_7d(&conn, params.wc).await?;
     let total_apr = cl_apr + el_apr;
     let total_rewards = accumulative_fee_reward + accumulative_protocol_reward;
     Ok(Json(Response {
