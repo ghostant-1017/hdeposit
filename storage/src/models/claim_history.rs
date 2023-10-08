@@ -22,9 +22,8 @@ pub async fn select_claim_by_address(
     client: &Client,
     address: Address,
 ) -> Result<Vec<(SplitFeeFilter, LogMeta)>> {
-    let sql = "select * from claim_history where meta->>'address' = $1";
+    let sql = "select * from claim_history where el_fee_contract = $1";
     let address = serde_json::to_string(&address)?;
-    let address = address.trim_matches('"');
     let rows = client
         .query(sql, &[&address])
         .await?;

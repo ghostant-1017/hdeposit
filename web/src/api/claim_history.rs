@@ -1,3 +1,5 @@
+use std::ops::Div;
+
 use eth2::types::Hash256;
 use ethers::types::H256;
 use storage::models::{query_el_fee_address_by_wc, select_claim_by_address};
@@ -39,7 +41,7 @@ pub async fn get_claim_history(
         .map(|(log, meta)| ClaimInfo {
             block_number: meta.block_number.as_u64(),
             tx_hash: meta.transaction_hash,
-            amount: log.user_amount.as_u64(),
+            amount: log.user_amount.div(1000000000).as_u64(),
         })
         .collect();
     Ok(Json(Response { data }))
