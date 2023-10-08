@@ -36,6 +36,14 @@ pub async fn insert_execution_reward(client: &Client, batch: &Vec<ExecutionRewar
     Ok(())
 }
 
+pub async fn select_validator_cumulative_el_reward(client: &Client, validator_index: u64) -> Result<u64> {
+    let sql = "select (sum(amount) / 1000000000)::Bigint as cumulative_reward from execution_reward where validator_index = $1;";
+    let row = client.query_one(sql, &[&(validator_index as i64)]).await?;
+    let data: Option<i64> = row.get("cumulative_reward");
+    Ok(data.map(|n| n as u64).unwrap_or_default())
+}
+
+
 pub async fn select_wc_el_apr_7d(client: &Client, wc: H256) -> Result<f64> {
     let indexes: Vec<i64> = select_wc_validator_indexes(client, wc).await?
     .into_iter()
