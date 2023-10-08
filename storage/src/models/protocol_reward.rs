@@ -135,15 +135,16 @@ pub async fn select_range_cl_rewards(client: &Client, from: i64, to: i64) -> Res
     Ok(result)
 }
 
+// Epoch range
 pub async fn select_range_el_rewards(client: &Client, from: i64, to: i64) -> Result<Vec<(Epoch, u64)>> {
     let sql = "
-    select (slot / 32)::Bigint as epoch, sum(amount)::BIGINT as el_reward 
+    select (slot / 32 / 225 * 225)::Bigint as epoch, sum(amount)::BIGINT as el_reward 
     from execution_reward 
     where 
         (slot / 32) >= $1
     and 
         (slot / 32) <= $2
-    GROUP BY (slot / 32);";
+    GROUP BY (slot / 32 / 225 * 225);";
     let rows = client.query(sql, &[&from, &to]).await?;
     let mut result = vec![];
     for row in rows {
