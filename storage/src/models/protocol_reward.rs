@@ -154,3 +154,14 @@ pub async fn select_range_el_rewards(client: &Client, from: i64, to: i64) -> Res
     }
     Ok(result)
 }
+
+// Epoch range
+pub async fn select_range_active_validators_by_wc(client: &Client, from: i64, to: i64, wc: H256) -> Result<u64> {
+    let sql = "
+    select validator_index from protocol_reward where epoch >= $1 and epoch <= $2 and validator_index = any(
+        select index from hellman_validators where withdrawal_credentials = '$3'
+    ) GROUP BY validator_index;
+    ";
+    let rows = client.query(sql, &[&from, &to, &serde_json::to_string(&wc)?]).await?;
+    Ok(rows.len() as u64)
+}
