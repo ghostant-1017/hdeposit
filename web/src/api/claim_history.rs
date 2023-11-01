@@ -13,7 +13,7 @@ pub struct Params {
 
 #[derive(Debug, Serialize)]
 pub struct ClaimInfo {
-    block_number: u64,
+    unix: u64,
     tx_hash: H256,
     amount: u64,
 }
@@ -38,8 +38,8 @@ pub async fn get_claim_history(
     let data = select_claim_by_address(&db, address)
         .await?
         .into_iter()
-        .map(|(log, meta)| ClaimInfo {
-            block_number: meta.block_number.as_u64(),
+        .map(|(log, meta, block_ts)| ClaimInfo {
+            unix: block_ts as u64,
             tx_hash: meta.transaction_hash,
             amount: log.user_amount.div(1000000000).as_u64(),
         })

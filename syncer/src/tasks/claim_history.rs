@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use eth2::types::EthSpec;
-use ethers::types::Address;
+use ethers::{types::Address, providers::Middleware};
 use ethers::prelude::LogMeta;
 use storage::{db::PgPool, models::{query_all_el_fee_contract, SyncState, select_sync_state, query_contract_deployed_block_number, insert_claim, upsert_sync_state}};
 use tracing::{info, warn};
 use contract::elfee::{ELFee, SplitFeeFilter};
 
-use crate::{component::EthComponent, beacon::get_current_finality_block_number, geth::Eth1Client};
+use crate::{component::{EthComponent, self}, beacon::get_current_finality_block_number, geth::Eth1Client};
 
 
 pub async fn sync_claim_history<T: EthSpec>(
@@ -53,7 +53,12 @@ pub async fn sync_claim_history<T: EthSpec>(
         let contract = ELFee::new(el_fee_address, eth1_client.clone());
         let logs = query_logs_batch(contract, from, to, el_fee_address).await?;
         for (log, meta) in logs {
-            insert_claim(tx.client(), el_fee_address, log, meta).await?;
+            let block_timestamp = eth.eth1
+            .get_block(meta.block_hash)
+            .await?
+            .ok_or(anyhow::anyhow!("block not found"))?
+            .timestamp;
+            insert_claim(tx.client(), el_fee_address, log, meta, block_timestamp.as_u64() as i64).await?;
         }
         upsert_sync_state(
             tx.client(),
