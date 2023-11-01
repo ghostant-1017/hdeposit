@@ -3,7 +3,7 @@ use bb8_postgres::tokio_postgres::Client;
 use ethers::types::{H160, H256};
 
 use super::{
-    select_max_epoch, select_range_active_validators_by_wc, select_range_validators_count,
+    select_max_epoch, select_range_active_validators_by_wc,
     select_wc_validator_indexes,
 };
 

@@ -1,4 +1,4 @@
-use crate::utils::{caculate_arp, DEPOSIT_AMOUNT};
+
 
 use super::*;
 
@@ -32,7 +32,7 @@ impl ValidatorInfo {
     pub async fn new(
         client: &Client,
         validator: HellmanValidator,
-        clock: &SystemTimeSlotClock,
+        _clock: &SystemTimeSlotClock,
     ) -> anyhow::Result<Self> {
         if validator.data.as_ref().is_none() {
             Ok(Self {

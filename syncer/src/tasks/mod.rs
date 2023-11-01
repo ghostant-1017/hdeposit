@@ -55,7 +55,7 @@ where
                 continue;
             }
         };
-        if !(event.topic_name() == &topic.to_string()) {
+        if event.topic_name() != &topic.to_string() {
             continue;
         }
         if let Err(err) = job().await {

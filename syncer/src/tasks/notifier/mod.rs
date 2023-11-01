@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::*;
 use crate::beacon::BeaconClient;
-use anyhow::anyhow;
+
 use eth2::types::{EventKind, EventTopic};
 use futures::StreamExt;
 use tokio::sync::broadcast::channel;

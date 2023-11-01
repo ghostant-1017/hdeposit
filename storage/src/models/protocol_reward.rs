@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+
 
 use anyhow::Result;
 use bb8_postgres::tokio_postgres::Client;
@@ -125,7 +125,7 @@ pub async fn select_range_validators_count(
         let count: i64 = row.get("count");
         result.push((Epoch::new(epoch as u64), count as u64))
     }
-    return Ok(result);
+    Ok(result)
 }
 
 pub async fn select_range_cl_rewards(

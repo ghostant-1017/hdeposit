@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+
 use std::collections::HashSet;
 
 use std::sync::Arc;
@@ -19,10 +19,10 @@ use backoff::ExponentialBackoff;
 use eth2::types::EthSpec;
 use eth2::types::SignedBeaconBlock;
 use eth2::types::Slot;
-use ethers::types::Block;
-use ethers::types::Transaction;
-use ethers::types::TransactionReceipt;
-use ethers::types::H256;
+
+
+
+
 use futures::StreamExt;
 use storage::db::PgPool;
 use storage::models::insert_execution_reward;

@@ -32,7 +32,7 @@ pub async fn get_apr_daily(
     let clock = server.clock;
     let tx = db.transaction().await?;
     let to = select_max_epoch(tx.client()).await? as i64;
-    let from = to - 225 * 6 as i64;
+    let from = to - 225 * 6_i64;
     let counts = select_range_validators_count(tx.client(), from, to).await?;
     let cl_rewards: HashMap<Epoch, u64> = select_range_cl_rewards(tx.client(), from, to)
         .await?
