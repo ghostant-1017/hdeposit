@@ -1,5 +1,6 @@
 mod cl_reward;
 mod el_reward;
+mod claim_history;
 mod notifier;
 
 use anyhow::anyhow;
@@ -25,6 +26,11 @@ pub async fn run<T: EthSpec>(pool: PgPool, eth: EthComponent) {
             &event_tx,
             || el_reward::sync_execution_rewards::<T>(pool.clone(), eth.clone()),
             EventTopic::FinalizedCheckpoint
+        ),
+        do_job(
+            &event_tx,
+            || claim_history::sync_claim_history::<T>(pool.clone(), eth.clone()),
+            EventTopic::FinalizedCheckpoint,
         )
     );
     error!("result: {:#?}", result);

@@ -8,7 +8,6 @@ use storage::db::PgPool;
 use tracing::error;
 type DepositContract = DepositContractABI<Provider<Http>>;
 
-mod claim_history;
 mod deposit_events;
 mod validators;
 pub struct Updater<T: EthSpec> {
@@ -45,9 +44,6 @@ impl<T: EthSpec> Updater<T> {
             }
             if let Err(err) = self.update_validators().await {
                 error!("Update validators: {}", err);
-            }
-            if let Err(err) = self.update_claim_history().await {
-                error!("Update claim history: {}", err);
             }
             tokio::time::sleep(Duration::from_secs(12)).await
         }

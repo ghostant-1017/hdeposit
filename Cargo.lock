@@ -6766,6 +6766,7 @@ dependencies = [
  "backoff",
  "chrono",
  "clap 4.4.0",
+ "contract",
  "eth2",
  "ethers",
  "futures",
