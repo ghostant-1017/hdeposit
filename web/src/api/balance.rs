@@ -4,8 +4,9 @@ use super::*;
 use eth2::types::Hash256;
 use ethers::types::Address;
 use storage::models::{
-    query_el_fee_address_by_wc, select_validators_by_credentials,
-    select_validator_cumulative_cl_reward, select_wc_cl_apr_7d, select_wc_el_apr_7d, select_validator_cumulative_el_reward,
+    query_el_fee_address_by_wc, select_validator_cumulative_cl_reward,
+    select_validator_cumulative_el_reward, select_validators_by_credentials, select_wc_cl_apr_7d,
+    select_wc_el_apr_7d,
 };
 
 #[derive(Debug, Deserialize)]
@@ -48,9 +49,11 @@ pub async fn get_balance(
             pending_protocol_balance +=
                 data.balance as i64 - (data.validator.effective_balance as i64);
             effective_balance += data.validator.effective_balance as i64;
-            let protocol_reward = select_validator_cumulative_cl_reward(&conn, data.index).await? as i64;
+            let protocol_reward =
+                select_validator_cumulative_cl_reward(&conn, data.index).await? as i64;
             accumulative_protocol_reward += protocol_reward;
-            let execution_reward = select_validator_cumulative_el_reward(&conn, data.index).await? as i64;
+            let execution_reward =
+                select_validator_cumulative_el_reward(&conn, data.index).await? as i64;
             accumulative_fee_reward += execution_reward;
         } else {
             effective_balance += validator.amount as i64;

@@ -10,9 +10,9 @@ use crate::component::EthComponent;
 use crate::geth::get_block_receipts_by_number;
 use crate::geth::get_block_transactions_by_number;
 use crate::geth::Eth1Client;
-use anyhow::Context;
 use anyhow::anyhow;
 use anyhow::ensure;
+use anyhow::Context;
 use backoff::future::retry;
 use backoff::ExponentialBackoff;
 
@@ -20,9 +20,9 @@ use eth2::types::EthSpec;
 use eth2::types::SignedBeaconBlock;
 use eth2::types::Slot;
 use ethers::types::Block;
-use ethers::types::H256;
 use ethers::types::Transaction;
 use ethers::types::TransactionReceipt;
+use ethers::types::H256;
 use futures::StreamExt;
 use storage::db::PgPool;
 use storage::models::insert_execution_reward;
@@ -63,10 +63,11 @@ pub async fn sync_execution_rewards<T: EthSpec>(
     let validator_ids = select_all_validator_indexes(&db).await?;
     let rewards = tokio::spawn(async move {
         get_execution_rewards::<T>(&eth, &validator_ids, synced + 1, finalized).await
-    }).await
+    })
+    .await
     .context("join get execution rewards")?
     .context("get execution rewards")?;
-    
+
     // Insert batch in transacitons and update SyncState
     let tx = db.transaction().await?;
     insert_execution_reward(tx.client(), &rewards).await?;
@@ -154,12 +155,14 @@ pub async fn extract_el_rewards_capella<T: EthSpec>(
 
 async fn caculate_block_fee(client: &Eth1Client, block_number: u64) -> anyhow::Result<u64> {
     let block = get_block_transactions_by_number(client, block_number)
-    .await?
-    .ok_or(anyhow!("block transactions empty"))?;
+        .await?
+        .ok_or(anyhow!("block transactions empty"))?;
     let receipts = get_block_receipts_by_number(client, block_number).await?;
 
     let mut total = 0;
-    let base_fee_per_gas = block.base_fee_per_gas.ok_or(anyhow!("base_fee_per_gas not found"))?;
+    let base_fee_per_gas = block
+        .base_fee_per_gas
+        .ok_or(anyhow!("base_fee_per_gas not found"))?;
     for receipt in receipts {
         let effective_gas_price = receipt
             .effective_gas_price
@@ -172,13 +175,11 @@ async fn caculate_block_fee(client: &Eth1Client, block_number: u64) -> anyhow::R
     Ok(total)
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
 
     use crate::tasks::el_reward::caculate_block_fee;
-
 
     #[tokio::test]
     async fn test_caculate_block_fee() {

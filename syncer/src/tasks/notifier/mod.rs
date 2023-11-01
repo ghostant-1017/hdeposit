@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
+use super::*;
 use crate::beacon::BeaconClient;
 use anyhow::anyhow;
-use eth2::types::{EventTopic, EventKind};
+use eth2::types::{EventKind, EventTopic};
 use futures::StreamExt;
 use tokio::sync::broadcast::channel;
-use tokio::sync::broadcast::{Sender, Receiver};
-use tracing::{warn, info};
-use super::*;
+use tokio::sync::broadcast::{Receiver, Sender};
+use tracing::{info, warn};
 
 pub type ChainEventTx<T> = Sender<EventKind<T>>;
 pub type ChainEventRx<T> = Receiver<EventKind<T>>;
@@ -19,7 +19,7 @@ pub fn init<T: EthSpec>(beacon: Arc<BeaconClient>) -> (ChainEventTx<T>, ChainEve
     let tx_clone = tx.clone();
     tokio::spawn(async move {
         loop {
-            let mut stream = match beacon.get_events::<T>(&event_topics).await{
+            let mut stream = match beacon.get_events::<T>(&event_topics).await {
                 Ok(stream) => stream,
                 Err(err) => {
                     error!("get events stream error: {err}");

@@ -24,9 +24,7 @@ pub async fn select_claim_by_address(
 ) -> Result<Vec<(SplitFeeFilter, LogMeta)>> {
     let sql = "select * from claim_history where el_fee_contract = $1";
     let address = serde_json::to_string(&address)?;
-    let rows = client
-        .query(sql, &[&address])
-        .await?;
+    let rows = client.query(sql, &[&address]).await?;
     let mut result = vec![];
     for row in rows {
         let log: serde_json::Value = row.get("log");

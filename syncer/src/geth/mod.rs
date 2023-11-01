@@ -20,10 +20,10 @@ pub async fn get_block_transactions_by_number(
 
 pub async fn get_block_receipts_by_number(
     client: &Eth1Client,
-    block_number: u64
+    block_number: u64,
 ) -> Result<Vec<TransactionReceipt>> {
     let receipts = client
-    .get_block_receipts(BlockNumber::Number(block_number.into()))
-    .await?;
+        .get_block_receipts(BlockNumber::Number(block_number.into()))
+        .await?;
     Ok(receipts)
 }
