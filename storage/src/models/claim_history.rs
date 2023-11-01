@@ -30,7 +30,7 @@ pub async fn select_claim_by_address(
     for row in rows {
         let log: serde_json::Value = row.get("log");
         let meta: serde_json::Value = row.get("meta");
-        let block_ts: i64 = row.get("meta");
+        let block_ts: i64 = row.get("block_timestamp");
         result.push((serde_json::from_value(log)?, serde_json::from_value(meta)?, block_ts));
     }
     Ok(result)
