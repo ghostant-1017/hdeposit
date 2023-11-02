@@ -84,3 +84,12 @@ pub async fn select_range_el_fee_by_indexes(
     let reward: Option<i64> = row.get(0);
     Ok(reward.unwrap_or_default())
 }
+
+pub async fn select_validator_el_apr_7d(client: &Client, validator_index: i64) -> Result<f64> {
+    let end_epoch = select_max_epoch(client).await? as i64;
+    let start_epoch = end_epoch - 6 * 225;
+    let total = select_range_el_fee_by_indexes(client, start_epoch * 32, end_epoch * 32, &vec![validator_index])
+        .await? as f64;
+    let apr = total / 32_000_000_000.0 / 7.0 * 365.0 * 100.0;
+    Ok(apr)
+}

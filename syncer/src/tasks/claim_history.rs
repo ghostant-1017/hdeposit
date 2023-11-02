@@ -7,7 +7,7 @@ use storage::{db::PgPool, models::{query_all_el_fee_contract, SyncState, select_
 use tracing::{info, warn};
 use contract::elfee::{ELFee, SplitFeeFilter};
 
-use crate::{component::{EthComponent, self}, beacon::get_current_finality_block_number, geth::Eth1Client};
+use crate::{component::EthComponent, beacon::get_current_finality_block_number, geth::Eth1Client};
 
 
 pub async fn sync_claim_history<T: EthSpec>(

@@ -8,6 +8,7 @@ use ethers::types::H256;
 use storage::models::{
     select_validator_cl_apr_7d, select_validator_cumulative_cl_reward,
     select_validators_by_credentials, HellmanValidator,
+    select_validator_el_apr_7d,
 };
 
 // 365 * 24 * 3600 / 12 / 32
@@ -25,6 +26,7 @@ pub struct ValidatorInfo {
     pub withdrawal_credentials: H256,
     pub accumulative_protocol_reward: u64,
     pub cl_apr: f64,
+    pub el_apr: f64,
     pub validator_data: Option<ValidatorData>,
 }
 
@@ -42,6 +44,7 @@ impl ValidatorInfo {
                 status: ValidatorStatus::Pending,
                 accumulative_protocol_reward: 0,
                 cl_apr: 0.0,
+                el_apr: 0.0,
                 validator_data: None,
             })
         } else {
@@ -49,6 +52,7 @@ impl ValidatorInfo {
             let accumulative_protocol_reward =
                 select_validator_cumulative_cl_reward(client, validator_data.index).await?;
             let cl_apr = select_validator_cl_apr_7d(client, validator_data.index).await?;
+            let el_apr = select_validator_el_apr_7d(client, validator_data.index as i64).await?;
             Ok(Self {
                 index: validator.index,
                 withdrawal_credentials: validator.withdrawal_credentials,
@@ -56,6 +60,7 @@ impl ValidatorInfo {
                 status: validator_data.status.superstatus(),
                 accumulative_protocol_reward,
                 cl_apr,
+                el_apr,
                 validator_data: Some(validator_data),
             })
         }
