@@ -57,7 +57,7 @@ impl ValidatorInfo {
                 index: validator.index,
                 withdrawal_credentials: validator.withdrawal_credentials,
                 balance: validator.amount,
-                status: validator_data.status.superstatus(),
+                status: validator_data.status,
                 accumulative_protocol_reward,
                 cl_apr,
                 el_apr,
