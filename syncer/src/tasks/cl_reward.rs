@@ -59,9 +59,6 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     }
 
     let validator_ids = select_all_validator_indexes(&conn).await?;
-    if validator_ids.len() == 0 {
-        return Ok(())
-    }
     let beacon = eth.beacon.clone();
     let rewards = tokio::spawn(async move {
         get_protocol_rewards_daily::<T>(&beacon, synced_to, &validator_ids).await
@@ -99,6 +96,9 @@ pub async fn get_protocol_rewards_daily<T: EthSpec>(
     start_epoch_of_day: u64,
     validators_ids: &HashSet<u64>,
 ) -> anyhow::Result<Vec<ProtocolReward>> {
+    if validators_ids.len() == 0 {
+        return Ok(vec![]);
+    }
     let start_slot = start_epoch_of_day * T::slots_per_epoch();
     let end_epoch_of_day = start_epoch_of_day + 225;
     let end_slot = end_epoch_of_day * T::slots_per_epoch();
