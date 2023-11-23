@@ -59,7 +59,9 @@ pub async fn sync_protocol_rewards<T: EthSpec>(
     }
 
     let validator_ids = select_all_validator_indexes(&conn).await?;
-
+    if validator_ids.len() == 0 {
+        return Ok(())
+    }
     let beacon = eth.beacon.clone();
     let rewards = tokio::spawn(async move {
         get_protocol_rewards_daily::<T>(&beacon, synced_to, &validator_ids).await
