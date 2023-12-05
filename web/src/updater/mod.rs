@@ -9,7 +9,7 @@ use tracing::error;
 type DepositContract = DepositContractABI<Provider<Http>>;
 
 mod deposit_events;
-mod validators;
+
 pub struct Updater<T: EthSpec> {
     beacon: BeaconNodeHttpClient,
     eth1_client: Provider<Http>,
@@ -41,9 +41,6 @@ impl<T: EthSpec> Updater<T> {
         loop {
             if let Err(err) = self.update_deposit_events().await {
                 error!("Update deposit_events: {}", err);
-            }
-            if let Err(err) = self.update_validators().await {
-                error!("Update validators: {}", err);
             }
             tokio::time::sleep(Duration::from_secs(12)).await
         }

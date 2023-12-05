@@ -2,6 +2,7 @@ mod cl_reward;
 mod el_reward;
 mod claim_history;
 mod notifier;
+mod validator;
 
 use anyhow::anyhow;
 use eth2::types::{EthSpec, EventTopic};
@@ -31,6 +32,11 @@ pub async fn run<T: EthSpec>(pool: PgPool, eth: EthComponent) {
             &event_tx,
             || claim_history::sync_claim_history::<T>(pool.clone(), eth.clone()),
             EventTopic::FinalizedCheckpoint,
+        ),
+        do_job(
+            &event_tx,
+            || validator::sync_validator_info::<T>(pool.clone(), eth.clone()),
+            EventTopic::Block,
         )
     );
     error!("result: {:#?}", result);
