@@ -16,6 +16,7 @@ pub fn init<T: EthSpec>(beacon: Arc<BeaconClient>) -> (ChainEventTx<T>, ChainEve
     let (tx, rx) = channel(1024);
     let mut event_topics = vec![];
     event_topics.push(EventTopic::FinalizedCheckpoint);
+    event_topics.push(EventTopic::Block);
     let tx_clone = tx.clone();
     tokio::spawn(async move {
         loop {
