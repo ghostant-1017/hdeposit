@@ -21,6 +21,13 @@ impl SyncState {
     }
 }
 
+pub async fn init_sync_states(client: &Client, start_slot: i64) -> Result<()> {
+    let sql = "insert into sync_states(name, val) values($1, $2) on conflict(name) do nothing;";
+    client.execute(sql, &[&SyncState::ELRewardLastSlot.to_key(), &start_slot]).await?;
+    client.execute(sql, &[&SyncState::DailyRewardsEpoch.to_key(),&(start_slot / 32 / 225 * 225)]).await?;
+    Ok(())
+}
+
 pub async fn select_sync_state(client: &Client, state: &SyncState) -> Result<Option<u64>> {
     let value = client
         .query_opt(
