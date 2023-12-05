@@ -9,7 +9,6 @@ use tracing::error;
 type DepositContract = DepositContractABI<Provider<Http>>;
 
 mod deposit_events;
-
 pub struct Updater<T: EthSpec> {
     beacon: BeaconNodeHttpClient,
     eth1_client: Provider<Http>,
