@@ -2,25 +2,30 @@ use anyhow::Result;
 use bb8_postgres::tokio_postgres::{types::ToSql, Client};
 use ethers::types::Address;
 pub enum SyncState {
-    WithdrawalFinalizedSlot,
-    WithdrawalLastSlot,
     DepositTxLastPK,
     ContractLogs(Address),
-    ELFeeLastSlot,
+    DailyRewardsEpoch,
+    ELRewardLastSlot,
 }
 
 impl SyncState {
     pub fn to_key(&self) -> String {
         match self {
-            SyncState::WithdrawalFinalizedSlot => "withdrawal_finalized_slot".to_string(),
-            SyncState::WithdrawalLastSlot => "withdrawal_last_slot".to_string(),
             SyncState::DepositTxLastPK => "deposit_last_pk".to_string(),
             SyncState::ContractLogs(address) => {
                 format!("contract_logs_{}", serde_json::to_string(&address).unwrap())
-            },
-            SyncState::ELFeeLastSlot => "elfee_last_slot".to_string()
+            }
+            SyncState::DailyRewardsEpoch => "daily_rewards_epoch".to_string(),
+            SyncState::ELRewardLastSlot => "el_reward_last_slot".to_string(),
         }
     }
+}
+
+pub async fn init_sync_states(client: &Client, start_slot: i64) -> Result<()> {
+    let sql = "insert into sync_states(name, val) values($1, $2) on conflict(name) do nothing;";
+    client.execute(sql, &[&SyncState::ELRewardLastSlot.to_key(), &start_slot]).await?;
+    client.execute(sql, &[&SyncState::DailyRewardsEpoch.to_key(),&(start_slot / 32 / 225 * 225)]).await?;
+    Ok(())
 }
 
 pub async fn select_sync_state(client: &Client, state: &SyncState) -> Result<Option<u64>> {

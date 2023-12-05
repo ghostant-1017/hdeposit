@@ -1,3 +1,5 @@
+use std::ops::Div;
+
 use eth2::types::Hash256;
 use ethers::types::H256;
 use storage::models::{query_el_fee_address_by_wc, select_claim_by_address};
@@ -11,7 +13,7 @@ pub struct Params {
 
 #[derive(Debug, Serialize)]
 pub struct ClaimInfo {
-    block_number: u64,
+    unix: u64,
     tx_hash: H256,
     amount: u64,
 }
@@ -33,13 +35,14 @@ pub async fn get_claim_history(
         None => return Ok(Json(Response { data: vec![] })),
     };
     // 2. query el_fee_contract logs
-    let data = select_claim_by_address(&db, address).await?
-    .into_iter()
-    .map(|(log, meta)| ClaimInfo {
-        block_number: meta.block_number.as_u64(),
-        tx_hash: meta.transaction_hash,
-        amount: log.user_amount.as_u64(),
-    })
-    .collect();
+    let data = select_claim_by_address(&db, address)
+        .await?
+        .into_iter()
+        .map(|(log, meta, block_ts)| ClaimInfo {
+            unix: block_ts as u64,
+            tx_hash: meta.transaction_hash,
+            amount: log.user_amount.div(1000000000).as_u64(),
+        })
+        .collect();
     Ok(Json(Response { data }))
 }

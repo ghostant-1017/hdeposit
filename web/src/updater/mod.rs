@@ -8,11 +8,7 @@ use storage::db::PgPool;
 use tracing::error;
 type DepositContract = DepositContractABI<Provider<Http>>;
 
-mod claim_history;
 mod deposit_events;
-mod validators;
-mod withdrawals;
-mod el_fee;
 pub struct Updater<T: EthSpec> {
     beacon: BeaconNodeHttpClient,
     eth1_client: Provider<Http>,
@@ -44,15 +40,6 @@ impl<T: EthSpec> Updater<T> {
         loop {
             if let Err(err) = self.update_deposit_events().await {
                 error!("Update deposit_events: {}", err);
-            }
-            if let Err(err) = self.update_validators().await {
-                error!("Update validators: {}", err);
-            }
-            if let Err(err) = self.update_withdrawals().await {
-                error!("Update withdrawls: {}", err);
-            }
-            if let Err(err) = self.update_claim_history().await {
-                error!("Update claim history: {}", err);
             }
             tokio::time::sleep(Duration::from_secs(12)).await
         }

@@ -63,7 +63,10 @@ pub async fn query_deposit_data_by_evt_pk(
     evt_pk: i64,
 ) -> Result<Vec<StoredDepositData>> {
     let rows = client
-        .query("select * from deposit_data where pre_deposit_event_pk = $1;", &[&evt_pk])
+        .query(
+            "select * from deposit_data where pre_deposit_event_pk = $1;",
+            &[&evt_pk],
+        )
         .await?;
     let mut result = vec![];
     for row in rows {

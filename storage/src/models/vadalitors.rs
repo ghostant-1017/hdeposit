@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::{anyhow, Result};
 use bb8_postgres::tokio_postgres::{Client, Row};
 use contract::deposit::DepositEventFilter;
@@ -27,7 +29,7 @@ impl TryFrom<Row> for HellmanValidator {
             None => None,
         };
         Ok(Self {
-            index: index.and_then(|index| Some(index as u64)),
+            index: index.map(|index| index as u64),
             pubkey: serde_json::from_str(&pubkey)?,
             withdrawal_credentials: serde_json::from_str(&wc)?,
             amount: amount as u64,
@@ -73,6 +75,28 @@ pub async fn select_all_validators(client: &Client) -> Result<Vec<HellmanValidat
     let mut result = vec![];
     for row in rows {
         result.push(row.try_into()?);
+    }
+    Ok(result)
+}
+
+pub async fn select_all_validator_indexes(client: &Client) -> Result<HashSet<u64>> {
+    let sql = "select index from hellman_validators where index is not null;";
+    let rows = client.query(sql, &[]).await?;
+    let mut result = HashSet::new();
+    for row in rows {
+        let index: i64 = row.get("index");
+        result.insert(index as u64);
+    }
+    Ok(result)
+}
+
+pub async fn select_wc_validator_indexes(client: &Client, wc: Hash256) -> Result<HashSet<u64>> {
+    let sql = "select index from hellman_validators where index is not null and  withdrawal_credentials = $1;";
+    let rows = client.query(sql, &[&serde_json::to_string(&wc)?]).await?;
+    let mut result = HashSet::new();
+    for row in rows {
+        let index: i64 = row.get("index");
+        result.insert(index as u64);
     }
     Ok(result)
 }

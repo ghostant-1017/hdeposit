@@ -36,5 +36,6 @@ CREATE TABLE claim_history(
     pk BIGSERIAL PRIMARY KEY,
     el_fee_contract VARCHAR NOT NULL,
     log JSON NOT NULL,
-    meta JSON NOT NULL
+    meta JSON NOT NULL,
+    block_timestamp BIGINT NOT NULL
 )
